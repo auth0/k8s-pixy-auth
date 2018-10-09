@@ -14,7 +14,7 @@ func main() {
 	clientID := os.Args[2]
 	audience := os.Args[3]
 
-	acr := getAuthInfo(domain, clientID, audience)
+	idToken := getAuthInfo(domain, clientID, audience)
 
 	creds := v1beta1.ExecCredential{
 		TypeMeta: metav1.TypeMeta{
@@ -22,7 +22,7 @@ func main() {
 			APIVersion: "client.authentication.k8s.io/v1beta1",
 		},
 		Status: &v1beta1.ExecCredentialStatus{
-			Token: acr.IDToken,
+			Token: idToken,
 		},
 	}
 
