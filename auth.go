@@ -1,5 +1,12 @@
 package main
 
+import (
+	"fmt"
+	"time"
+
+	jwt "github.com/dgrijalva/jwt-go"
+)
+
 type tokenCache interface {
 	GetTokens(clientID string) (string, string)
 	CacheTokens(clientID, idToken, refreshToken string)
@@ -7,19 +14,15 @@ type tokenCache interface {
 
 // getAuthToken
 func getAuthToken(domain, clientID, audience string) string {
-	// check config
-	// config := newConfig()
-
-	// get token
-	// if expired or not exist, flow
-	// else return token
-
 	config := newConfigFromFile()
 	idToken, _ := config.GetTokens(clientID)
 
-	// TODO: check expiry and refresh with refresh token
 	if idToken != "" {
-		return idToken
+		if !IsTokenExpired(idToken) {
+			return idToken
+		}
+
+		// TODO: refresh
 	}
 
 	idToken, refreshToken := pkceFlow(domain, clientID, audience)
@@ -27,4 +30,18 @@ func getAuthToken(domain, clientID, audience string) string {
 	config.CacheTokens(clientID, idToken, refreshToken)
 
 	return idToken
+}
+
+// IsTokenExpired ...
+func IsTokenExpired(token string) bool {
+	p := jwt.Parser{}
+
+	// since we are just getting the expiration time we can unsafely parse
+	claims := jwt.MapClaims{}
+	_, _, err := p.ParseUnverified(token, claims)
+	if err != nil {
+		panic(fmt.Errorf("could not parse jwt token: %s", err))
+	}
+
+	return !claims.VerifyExpiresAt(time.Now().Unix(), true)
 }
