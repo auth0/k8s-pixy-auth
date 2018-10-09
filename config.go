@@ -15,7 +15,8 @@ const configFilePath = "$HOME/.auth0-k8s-client-go-exec-plugin"
 
 // Configuration ...
 type Configuration struct {
-	Clients map[string]ClientConfiguration `yaml:"clients"`
+	Clients    map[string]ClientConfiguration `yaml:"clients"`
+	configFile io.ReadWriter                  `yaml:"-"`
 }
 
 // ClientConfiguration ...
@@ -31,8 +32,9 @@ func NewConfig(r io.ReadWriter) Configuration {
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading config reader: %s", err))
 	}
-
-	c := Configuration{}
+	c := Configuration{
+		configFile: r,
+	}
 	err = yaml.Unmarshal(b, &c)
 	if err != nil {
 		panic(fmt.Errorf("Unmarshal: %v", err))
@@ -42,20 +44,16 @@ func NewConfig(r io.ReadWriter) Configuration {
 }
 
 func newConfigFromFile() Configuration {
-	if len(configFileName) > 0 && len(configFilePath) > 0 {
-		fileLoc := filepath.Join(configFilePath, configFileName)
-		if !pathExists(fileLoc) {
-			return Configuration{}
-		}
-
-		r, err := os.Open(fileLoc)
-		if err != nil {
-			panic(fmt.Errorf("fatal error config file: %s", err))
-		}
-		return NewConfig(r)
+	fileLoc := filepath.Join(configFilePath, configFileName)
+	if !pathExists(fileLoc) {
+		return Configuration{}
 	}
 
-	return Configuration{}
+	r, err := os.Open(fileLoc)
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %s", err))
+	}
+	return NewConfig(r)
 }
 
 func pathExists(path string) bool {
@@ -71,6 +69,25 @@ func (c *Configuration) GetTokens(clientID string) (string, string) {
 	}
 
 	return client.IDToken, client.RefreshToken
+}
+
+// CacheTokens ...
+func (c *Configuration) CacheTokens(clientID, idToken, refreshToken string) {
+
+	c.Clients[clientID] = ClientConfiguration{
+		IDToken:      idToken,
+		RefreshToken: refreshToken,
+	}
+
+	b, err := yaml.Marshal(&c)
+	if err != nil {
+		panic(fmt.Errorf("Marshal: %v", err))
+	}
+
+	_, err = c.configFile.Write(b)
+	if err != nil {
+		panic(fmt.Errorf("Error caching tokens: %v", err))
+	}
 }
 
 // save saves the configuration file using the name and path on the

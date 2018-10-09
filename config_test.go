@@ -11,14 +11,15 @@ import (
 
 var _ = Describe("Main", func() {
 	Describe("Config", func() {
-		Context("yaml", func() {
+		Context("with valid yaml", func() {
 			testYaml := `
 clients:
   testing:
     idToken: testing_idToken
     refreshToken: testing_refreshToken
 `
-			config := NewConfig(bytes.NewBufferString(testYaml))
+			buffer := bytes.NewBufferString(testYaml)
+			config := NewConfig(buffer)
 
 			It("gets tokens when present", func() {
 				idToken, refreshToken := config.GetTokens("testing")
@@ -33,10 +34,30 @@ clients:
 				Expect(idToken).To(BeEmpty())
 				Expect(refreshToken).To(BeEmpty())
 			})
+
+			It("cache should overwrite old tokens", func() {
+				updatedYaml := `clients:
+  testing:
+    idToken: newIdToken
+    refreshToken: newRefreshToken
+`
+				config.CacheTokens("testing", "newIdToken", "newRefreshToken")
+
+				Expect(buffer.String()).To(Equal(updatedYaml))
+			})
 		})
 
-		// invalid yaml
-
-		// caching yaml
+		Context("with invalid yaml", func() {
+			It("should panic", func() {
+				testYaml := `
+clients:
+  - testing:
+    - testing_id: blah
+`
+				Expect(func() {
+					_ = NewConfig(bytes.NewBufferString(testYaml))
+				}).Should(Panic())
+			})
+		})
 	})
 })
