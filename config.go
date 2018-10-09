@@ -46,7 +46,9 @@ func NewConfig(r io.ReadWriter) Configuration {
 func newConfigFromFile() Configuration {
 	fileLoc := filepath.Join(configFilePath, configFileName)
 	if !pathExists(fileLoc) {
-		return Configuration{}
+		return Configuration{
+			Clients: make(map[string]ClientConfiguration),
+		}
 	}
 
 	r, err := os.Open(fileLoc)
@@ -92,24 +94,24 @@ func (c *Configuration) CacheTokens(clientID, idToken, refreshToken string) {
 
 // save saves the configuration file using the name and path on the
 // configuration object. If no name and path are set it silently continues
-func (c *Configuration) save() {
-	if len(configFileName) == 0 && len(configFilePath) == 0 {
-		return
-	}
+// func (c *Configuration) save() {
+// 	if len(configFileName) == 0 && len(configFilePath) == 0 {
+// 		return
+// 	}
 
-	if !pathExists(configFilePath) {
-		os.MkdirAll(configFilePath, os.ModeDir)
-	}
+// 	if !pathExists(configFilePath) {
+// 		os.MkdirAll(configFilePath, os.ModeDir)
+// 	}
 
-	fileLoc := filepath.Join(configFilePath, configFileName)
+// 	fileLoc := filepath.Join(configFilePath, configFileName)
 
-	m, err := yaml.Marshal(c)
-	if err != nil {
-		panic(fmt.Errorf("fatal error marshaling config file: %s", err))
-	}
+// 	m, err := yaml.Marshal(c)
+// 	if err != nil {
+// 		panic(fmt.Errorf("fatal error marshaling config file: %s", err))
+// 	}
 
-	err = ioutil.WriteFile(fileLoc, []byte(m), 0644)
-	if err != nil {
-		panic(fmt.Errorf("fatal error saving config file: %s", err))
-	}
-}
+// 	err = ioutil.WriteFile(fileLoc, []byte(m), 0644)
+// 	if err != nil {
+// 		panic(fmt.Errorf("fatal error saving config file: %s", err))
+// 	}
+// }

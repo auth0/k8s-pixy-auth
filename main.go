@@ -14,7 +14,7 @@ func main() {
 	clientID := os.Args[2]
 	audience := os.Args[3]
 
-	idToken := getAuthInfo(domain, clientID, audience)
+	idToken := getAuthToken(domain, clientID, audience)
 
 	creds := v1beta1.ExecCredential{
 		TypeMeta: metav1.TypeMeta{
