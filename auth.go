@@ -22,7 +22,9 @@ func getAuthToken(domain, clientID, audience string) string {
 		return idToken
 	}
 
-	acr := pkceFlow(domain, clientID, audience)
-	// TODO: cache tokens
-	return acr.IDToken
+	idToken, refreshToken := pkceFlow(domain, clientID, audience)
+
+	config.CacheTokens(clientID, idToken, refreshToken)
+
+	return idToken
 }

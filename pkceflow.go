@@ -84,7 +84,7 @@ func listenAndServe(server *http.Server) {
 	}
 }
 
-func pkceFlow(domain, clientID, audience string) authorizationCodeResponse {
+func pkceFlow(domain, clientID, audience string) (string, string) {
 	responseChan := make(chan url.Values)
 
 	http.HandleFunc("/callback", getCallbackHandler(responseChan))
@@ -141,5 +141,5 @@ func pkceFlow(domain, clientID, audience string) authorizationCodeResponse {
 		panic(err)
 	}
 
-	return acr
+	return acr.IDToken, acr.RefreshToken
 }

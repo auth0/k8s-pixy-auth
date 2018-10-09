@@ -5,13 +5,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 
 	yaml "gopkg.in/yaml.v2"
 )
-
-const configFileName = "config"
-const configFilePath = "$HOME/.auth0-k8s-client-go-exec-plugin"
 
 // Configuration ...
 type Configuration struct {
@@ -33,6 +31,7 @@ func NewConfig(r io.ReadWriter) Configuration {
 		panic(fmt.Errorf("fatal error reading config reader: %s", err))
 	}
 	c := Configuration{
+		Clients:    make(map[string]ClientConfiguration),
 		configFile: r,
 	}
 	err = yaml.Unmarshal(b, &c)
@@ -43,18 +42,40 @@ func NewConfig(r io.ReadWriter) Configuration {
 	return c
 }
 
+func getHomeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	return usr.HomeDir
+}
+
 func newConfigFromFile() Configuration {
+	configFileName := "config"
+	configFilePath := filepath.Join(getHomeDir(), ".auth0-k8s-client-go-exec-plugin")
+
 	fileLoc := filepath.Join(configFilePath, configFileName)
+
+	var r io.ReadWriter
+	var err error
+
 	if !pathExists(fileLoc) {
-		return Configuration{
-			Clients: make(map[string]ClientConfiguration),
+		err := os.MkdirAll(configFilePath, os.ModePerm)
+		if err != nil {
+			panic(fmt.Errorf("fatal error creating directory: %s", err))
+		}
+
+		r, err = os.OpenFile(fileLoc, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+		if err != nil {
+			panic(fmt.Errorf("fatal error creating file: %s", err))
+		}
+	} else {
+		r, err = os.OpenFile(fileLoc, os.O_RDWR, 0600)
+		if err != nil {
+			panic(fmt.Errorf("fatal error reading config file: %s", err))
 		}
 	}
 
-	r, err := os.Open(fileLoc)
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
-	}
 	return NewConfig(r)
 }
 
@@ -86,32 +107,13 @@ func (c *Configuration) CacheTokens(clientID, idToken, refreshToken string) {
 		panic(fmt.Errorf("Marshal: %v", err))
 	}
 
+	if file, ok := c.configFile.(*os.File); ok {
+		file.Truncate(0)
+		file.Seek(0, 0)
+	}
+
 	_, err = c.configFile.Write(b)
 	if err != nil {
 		panic(fmt.Errorf("Error caching tokens: %v", err))
 	}
 }
-
-// save saves the configuration file using the name and path on the
-// configuration object. If no name and path are set it silently continues
-// func (c *Configuration) save() {
-// 	if len(configFileName) == 0 && len(configFilePath) == 0 {
-// 		return
-// 	}
-
-// 	if !pathExists(configFilePath) {
-// 		os.MkdirAll(configFilePath, os.ModeDir)
-// 	}
-
-// 	fileLoc := filepath.Join(configFilePath, configFileName)
-
-// 	m, err := yaml.Marshal(c)
-// 	if err != nil {
-// 		panic(fmt.Errorf("fatal error marshaling config file: %s", err))
-// 	}
-
-// 	err = ioutil.WriteFile(fileLoc, []byte(m), 0644)
-// 	if err != nil {
-// 		panic(fmt.Errorf("fatal error saving config file: %s", err))
-// 	}
-// }
