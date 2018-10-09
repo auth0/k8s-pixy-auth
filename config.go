@@ -26,7 +26,7 @@ type ClientConfiguration struct {
 
 // NewConfig creates and returns a config object that reads from the default
 // config file
-func NewConfig(r io.Reader) Configuration {
+func NewConfig(r io.ReadWriter) Configuration {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading config reader: %s", err))
@@ -65,7 +65,12 @@ func pathExists(path string) bool {
 
 // GetTokens ...
 func (c *Configuration) GetTokens(clientID string) (string, string) {
-	return c.Clients[clientID].IDToken, c.Clients[clientID].RefreshToken
+	client, ok := c.Clients[clientID]
+	if !ok {
+		return "", ""
+	}
+
+	return client.IDToken, client.RefreshToken
 }
 
 // save saves the configuration file using the name and path on the

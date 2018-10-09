@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"strings"
+	"bytes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,23 +12,27 @@ import (
 var _ = Describe("Main", func() {
 	Describe("Config", func() {
 		Context("yaml", func() {
-			It("gets tokens when present", func() {
-				testYaml := `
+			testYaml := `
 clients:
   testing:
     idToken: testing_idToken
     refreshToken: testing_refreshToken
 `
-				config := NewConfig(strings.NewReader(testYaml))
+			config := NewConfig(bytes.NewBufferString(testYaml))
+
+			It("gets tokens when present", func() {
 				idToken, refreshToken := config.GetTokens("testing")
 
 				Expect(idToken).To(Equal("testing_idToken"))
 				Expect(refreshToken).To(Equal("testing_refreshToken"))
 			})
 
-			// It("returns empty when no tokens are present for client", func() {
+			It("returns empty when no tokens are present for client", func() {
+				idToken, refreshToken := config.GetTokens("not_present")
 
-			// })
+				Expect(idToken).To(BeEmpty())
+				Expect(refreshToken).To(BeEmpty())
+			})
 		})
 
 		// invalid yaml
