@@ -15,17 +15,18 @@ type tokenCache interface {
 // getAuthToken
 func getAuthToken(domain, clientID, audience string) string {
 	config := newConfigFromFile()
-	idToken, _ := config.GetTokens(clientID)
+	idToken, refreshToken := config.GetTokens(clientID)
 
-	if idToken != "" {
+	if idToken != "" && refreshToken != "" {
 		if !IsTokenExpired(idToken) {
 			return idToken
 		}
 
-		// TODO: refresh
-	}
+		idToken = refreshFlow(domain, clientID, refreshToken)
+	} else {
+		idToken, refreshToken = pkceFlow(domain, clientID, audience)
 
-	idToken, refreshToken := pkceFlow(domain, clientID, audience)
+	}
 
 	config.CacheTokens(clientID, idToken, refreshToken)
 
