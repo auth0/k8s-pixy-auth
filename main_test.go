@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/auth0/auth0-client-go-exec-plugin"
+	. "github.com/auth0/auth0-k8s-client-go-exec-plugin"
 )
 
 var _ = Describe("Main", func() {
