@@ -22,7 +22,7 @@ func getAuthToken(domain, clientID, audience string) string {
 			return idToken
 		}
 
-		idToken = refreshFlow(domain, clientID, refreshToken)
+		idToken = RefreshTokenExchangeFlow(domain, clientID, refreshToken)
 	} else {
 		idToken, refreshToken = pkceFlow(domain, clientID, audience)
 

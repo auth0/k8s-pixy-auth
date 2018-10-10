@@ -2,6 +2,10 @@ package main_test
 
 import (
 	"bytes"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -98,6 +102,45 @@ clients:
 
 					Expect(false).To(Equal(IsTokenExpired(token)))
 				})
+			})
+		})
+	})
+
+	Describe("refreshTokenExchanging", func() {
+		Describe("httpTokenExchanger", func() {
+			It("calls the correct URL with correctly constructed data", func() {
+				expectedRequest := `{"grant_type":"refresh_token","client_id":"abc","refresh_token":"token_yay"}
+`
+				expectedURLPath := "/oauth/token"
+
+				var actualReq string
+				var actualURLPath string
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					actualURLPath = r.URL.Path
+
+					rb, err := ioutil.ReadAll(r.Body)
+					defer r.Body.Close()
+					if err != nil {
+						panic(err)
+					}
+					actualReq = string(rb)
+
+					w.Write([]byte(`{"id_token":"new_id_token_yay"}`))
+				}))
+				defer ts.Close()
+
+				rteReq := RefreshTokenExchangeRequest{
+					GrantType:    "refresh_token",
+					ClientID:     "abc",
+					RefreshToken: "token_yay",
+				}
+
+				he := HTTPTokenExchanger{}
+				rteResp := he.ExchangeRefreshToken(fmt.Sprintf("%s/", ts.URL), rteReq)
+
+				Expect(actualReq).To(Equal(expectedRequest))
+				Expect(actualURLPath).To(Equal(expectedURLPath))
+				Expect(rteResp.IDToken).To(Equal("new_id_token_yay"))
 			})
 		})
 	})
