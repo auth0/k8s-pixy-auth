@@ -1,13 +1,12 @@
-# auth0-k8s-auth-client
+# auth0-kubectl-auth
 Transparently authenticate kubectl users using Auth0
 
 As of Kubernetes v1.11 there is beta support for a [client-go credentials plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). Using the support it is possible to use an Auth0 application to authenticate users and provide tokens with which a correctly configured Kubernetes cluster can authorize user actions.
 
 ## Installation
 At this point in the project installation is manual. In the future this will be automated.
-1. Pull down this repo with `git clone git@github.com:auth0/auth0-k8s-client-go-exec-plugin.git $GOPATH/src/github.com/auth0/cloning/auth0-k8s-client-go-exec-plugin`
-2. Go to the repo location and install the needed deps: `$GOPATH/src/github.com/auth0/cloning/auth0-k8s-client-go-exec-plugin && go get .`
-3. Build a binary with `go build -o ~/.kube/auth0-kubectl-auth`
+1. Pull down this repo with `git clone git@github.com:auth0/auth0-kubectl-auth.git `
+2. Build a binary with `go build -o ~/.kube/auth0-kubectl-auth`
 
 ## Configuration
 Before you can get up and running you need to configure a couple of things.
