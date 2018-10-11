@@ -2,16 +2,16 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestAuth0ClientGoExecPlugin(t *testing.T) {
@@ -33,6 +33,15 @@ func genValidTokenWithExp(exp time.Time) string {
 	}
 
 	return ss
+}
+
+type mockedHTTPTokenExchanger struct {
+	mock.Mock
+}
+
+func (m *mockedHTTPTokenExchanger) Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
+	args := m.Called(url, contentType, body)
+	return args.Get(0).(*http.Response), args.Error(1)
 }
 
 var _ = Describe("Main", func() {
@@ -108,38 +117,17 @@ clients:
 	Describe("refreshTokenExchanging", func() {
 		Describe("httpTokenExchanger", func() {
 			It("calls the correct URL with correctly constructed data", func() {
-				expectedRequest := `{"grant_type":"refresh_token","client_id":"abc","refresh_token":"token_yay"}
-`
-				expectedURLPath := "/oauth/token"
-
-				var actualReq string
-				var actualURLPath string
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					actualURLPath = r.URL.Path
-
-					rb, err := ioutil.ReadAll(r.Body)
-					defer r.Body.Close()
-					if err != nil {
-						panic(err)
-					}
-					actualReq = string(rb)
-
-					w.Write([]byte(`{"id_token":"new_id_token_yay"}`))
-				}))
-				defer ts.Close()
-
-				rteReq := RefreshTokenExchangeRequest{
-					GrantType:    "refresh_token",
-					ClientID:     "abc",
-					RefreshToken: "token_yay",
+				expectedBody := bytes.NewBufferString(`{"grant_type":"refresh_token","client_id":"abc","refresh_token":"token_yay"}
+`)
+				resp := &http.Response{
+					Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"id_token":"new_id_token_yay"}`))),
 				}
+				exchanger := mockedHTTPTokenExchanger{}
+				exchanger.On("Post", "http://issuer.domain/oauth/token", "application/json", expectedBody).Return(resp, nil)
 
-				he := HTTPTokenExchanger{}
-				rteResp := he.ExchangeRefreshToken(fmt.Sprintf("%s/", ts.URL), rteReq)
+				idToken := rawRefreshTokenExchangeFlow("http://issuer.domain/", "abc", "token_yay", &exchanger)
 
-				Expect(actualReq).To(Equal(expectedRequest))
-				Expect(actualURLPath).To(Equal(expectedURLPath))
-				Expect(rteResp.IDToken).To(Equal("new_id_token_yay"))
+				Expect(idToken).To(Equal("new_id_token_yay"))
 			})
 		})
 	})

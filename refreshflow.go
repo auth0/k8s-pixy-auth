@@ -4,20 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
-// RefreshTokenExchangeRequest is the request body needed when exchanging a
+// refreshTokenExchangeRequest is the request body needed when exchanging a
 // refresh token
-type RefreshTokenExchangeRequest struct {
+type refreshTokenExchangeRequest struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	RefreshToken string `json:"refresh_token"`
 }
 
-// RefreshTokenExchangeResponse is the response gotten when exchanging a
+// refreshTokenExchangeResponse is the response gotten when exchanging a
 // refresh token
-type RefreshTokenExchangeResponse struct {
+type refreshTokenExchangeResponse struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int    `json:"expires_in"`
 	IDToken     string `json:"id_token"`
@@ -25,52 +26,56 @@ type RefreshTokenExchangeResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
-// TokenExchanger handles the actual implementation of exchanging a refresh
-// token
-type TokenExchanger interface {
-	ExchangeRefreshToken(issuer string, rteReq RefreshTokenExchangeRequest) RefreshTokenExchangeResponse
+// httpTokenExchanger is used to allow passing in something like http in order
+// to exchange a refresh token
+type httpTokenExchanger interface {
+	Post(url, contentType string, body io.Reader) (resp *http.Response, err error)
 }
 
-// HTTPTokenExchanger is the HTTP implementation for exchanging a refresh token
-type HTTPTokenExchanger struct{}
+// buildRefreshTokenExchangeRequest builds the needed refresh token exchange
+// request
+func buildRefreshTokenExchangeRequest(clientID, refreshToken string) io.Reader {
+	rteReq := refreshTokenExchangeRequest{
+		GrantType:    "refresh_token",
+		ClientID:     clientID,
+		RefreshToken: refreshToken,
+	}
 
-// ExchangeRefreshToken handles exchanging the refresh token via HTTP
-func (hte HTTPTokenExchanger) ExchangeRefreshToken(issuer string, rteReq RefreshTokenExchangeRequest) RefreshTokenExchangeResponse {
 	rteReqBuffer := new(bytes.Buffer)
 	json.NewEncoder(rteReqBuffer).Encode(rteReq)
 
-	resp, err := http.Post(fmt.Sprintf("%voauth/token", issuer), "application/json", rteReqBuffer)
+	return rteReqBuffer
+}
+
+// extractIDTokenFrom extracts the id token from the passed in bytes
+func extractIDTokenFrom(resp io.Reader) string {
+	rteResp := refreshTokenExchangeResponse{}
+	err := json.NewDecoder(resp).Decode(&rteResp)
+	if err != nil {
+		panic(err)
+	}
+
+	return rteResp.IDToken
+}
+
+// rawRefreshTokenExchangeFlow allows for different mechanics for exchanging a
+// refresh token by accepting a tokenExchanger interface which will handle the
+// implementation of exchanging the token. It will return the new id token
+func rawRefreshTokenExchangeFlow(issuer, clientID, refreshToken string, exchanger httpTokenExchanger) string {
+	req := buildRefreshTokenExchangeRequest(clientID, refreshToken)
+
+	resp, err := exchanger.Post(fmt.Sprintf("%voauth/token", issuer), "application/json", req)
 
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 
-	rteResp := RefreshTokenExchangeResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&rteResp)
-	if err != nil {
-		panic(err)
-	}
-
-	return rteResp
+	return extractIDTokenFrom(resp.Body)
 }
 
-// RawRefreshTokenExchangeFlow allows for different mechanics for exchanging a
-// refresh token by accepting a tokenExchanger interface which will handle the
-// implementation of exchanging the token. It will return the new id token
-func RawRefreshTokenExchangeFlow(domain, clientID, refreshToken string, exchanger TokenExchanger) string {
-	rteReq := RefreshTokenExchangeRequest{
-		GrantType:    "refresh_token",
-		ClientID:     clientID,
-		RefreshToken: refreshToken,
-	}
-
-	rteResp := exchanger.ExchangeRefreshToken(domain, rteReq)
-	return rteResp.IDToken
-}
-
-// RefreshTokenExchangeFlow takes a domain, client id, and refresh token and
+// refreshTokenExchangeFlow takes a issuer, client id, and refresh token and
 // exchanges it for an id token
-func RefreshTokenExchangeFlow(domain, clientID, refreshToken string) string {
-	return RawRefreshTokenExchangeFlow(domain, clientID, refreshToken, HTTPTokenExchanger{})
+func refreshTokenExchangeFlow(issuer, clientID, refreshToken string) string {
+	return rawRefreshTokenExchangeFlow(issuer, clientID, refreshToken, &http.Client{})
 }
