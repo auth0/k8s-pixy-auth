@@ -1,4 +1,4 @@
-package main_test
+package main
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/auth0/auth0-k8s-client-go-exec-plugin"
 	jwt "github.com/dgrijalva/jwt-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,7 +16,7 @@ import (
 
 func TestAuth0ClientGoExecPlugin(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Auth0ClientGoExecPlugin Suite")
+	RunSpecs(t, "auth0-kubectl-auth Suite")
 }
 
 func genValidTokenWithExp(exp time.Time) string {
