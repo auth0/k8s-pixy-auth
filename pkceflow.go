@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os/exec"
 	"runtime"
 )
@@ -31,30 +30,83 @@ type authorizationCodeResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-// generateRandomBytes returns securely generated random bytes.
-// It will return an error if the system's secure random
-// number generator fails to function correctly, in which
-// case the caller should not continue.
-func generateRandomBytes(n int) ([]byte, error) {
+// generateRandomString returns a URL-safe, base64 encoded
+// securely generated random string.
+func generateRandomString(n int) string {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return b, nil
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
-// generateRandomString returns a URL-safe, base64 encoded
-// securely generated random string.
-func generateRandomString(s int) (string, error) {
-	b, err := generateRandomBytes(s)
-	return base64.RawURLEncoding.EncodeToString(b), err
+// authorizationCodeFlowHelper handles listening for the authorization code
+// callback as well as opening the URL that will result in the code being sent
+// to the callback
+type authorizationCodeFlowHelper interface {
+	InitCallbackListener(port int) chan string
+	OpenURL(string) error
+	GetCallbackURL() string
 }
 
-// openURL opens the specified URL in the default browser of the user.
-func openURL(url string) error {
+// getAuthorizationCode gets the authorization code needed for getting an id
+// and refresh token
+func getAuthorizationCode(issuer, clientID, audience, challenge, challengeMethod string, helper authorizationCodeFlowHelper) string {
+	codeChan := helper.InitCallbackListener(28840)
+
+	helper.OpenURL(fmt.Sprintf(
+		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s",
+		issuer,
+		audience,
+		clientID,
+		challenge,
+		challengeMethod,
+		helper.GetCallbackURL(),
+	))
+
+	return <-codeChan
+}
+
+type getAuthorizationCodeFlowHelper struct {
+	callbackURL string
+}
+
+func (g *getAuthorizationCodeFlowHelper) InitCallbackListener(port int) chan string {
+	responseChan := make(chan string)
+
+	go func() {
+		done := make(chan bool)
+		http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+			responseChan <- r.URL.Query().Get("code")
+			done <- true
+		})
+
+		s := &http.Server{
+			Addr: fmt.Sprintf(":%d", port),
+		}
+		go func() {
+			if err := s.ListenAndServe(); err != http.ErrServerClosed {
+				log.Printf("HTTP server ListenAndServe error: %v", err)
+			}
+		}()
+
+		<-done
+
+		if err := s.Shutdown(context.Background()); err != nil {
+			log.Printf("HTTP server Shutdown error: %v", err)
+		}
+
+	}()
+
+	g.callbackURL = fmt.Sprintf("http://localhost:%d/callback", port)
+
+	return responseChan
+}
+
+func (g getAuthorizationCodeFlowHelper) OpenURL(url string) error {
 	var cmd string
 	var args []string
 
@@ -71,90 +123,25 @@ func openURL(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
-func getCallbackHandler(sendResponseTo chan url.Values) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sendResponseTo <- r.URL.Query()
-	}
+func (g *getAuthorizationCodeFlowHelper) GetCallbackURL() string {
+	return g.callbackURL
 }
 
-func listenAndServe(server *http.Server) {
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		// Error starting or closing listener:
-		log.Printf("HTTP server ListenAndServe error: %v", err)
-	}
-}
-
-// pkceHelper handles the main pieces of the PKCE flow
-type pkceHelper interface {
-	httpTokenExchanger
-	// GenerateVerifier() string
-	// BuildChallenge(verifier string) string
-	InitCallbackListener(port int) (chan string, string)
-	// BuildURL(issuer, clientID, audience, challenge, callbackURL string) string
-	OpenURL(string)
-	// ExchangeCodeForIDTokenAndRefreshToken(issuer, clientID, code, verifier, callbackURL string, exchanger httpTokenExchanger)
-}
-
-func rawPKCEFlow(issuer, clientID, audience string, flower pkceHelper) (string, string) {
-	codeChan, _ := flower.InitCallbackListener(28840)
-
-	flower.OpenURL(fmt.Sprintf(
-		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256&redirect_uri=http://localhost:28840/callback",
-		issuer,
-		audience,
-		clientID,
-		"challenge"))
-
-	<-codeChan
-
-	return "", ""
-}
-
-func pkceFlow(domain, clientID, audience string) (string, string) {
-	responseChan := make(chan url.Values)
-
-	http.HandleFunc("/callback", getCallbackHandler(responseChan))
-
-	s := &http.Server{
-		Addr: ":8080",
-	}
-	go listenAndServe(s)
-
-	verifier, err := generateRandomString(32)
-	if err != nil {
-		panic(err)
-	}
-
-	csum := sha256.Sum256([]byte(verifier))
-	challenge := base64.RawURLEncoding.EncodeToString(csum[:])
-
-	openURL(fmt.Sprintf(
-		"https://%v/authorize?audience=%v&scope=openid offline_access email&response_type=code&client_id=%v&code_challenge=%v&code_challenge_method=S256&redirect_uri=http://localhost:8080/callback",
-		domain,
-		audience,
-		clientID,
-		challenge))
-	queryParams := <-responseChan
-
-	code := queryParams.Get("code")
-
-	if err := s.Shutdown(context.Background()); err != nil {
-		// Error from closing listeners, or context timeout:
-		log.Printf("HTTP server Shutdown error: %v", err)
-	}
-
+// exchangeAuthorizationCodeForIDAndRefreshToken exchanges an authorization code
+// for an id and refresh token
+func exchangeAuthorizationCodeForIDAndRefreshToken(issuer, clientID, verifier, code, redirectURI string, exchanger httpTokenExchanger) (string, string) {
 	codeExchange := authorizationCodeExchange{
 		GrantType:    "authorization_code",
 		ClientID:     clientID,
 		CodeVerifier: verifier,
 		Code:         code,
-		RedirectURI:  "http://localhost:8080/callback",
+		RedirectURI:  redirectURI,
 	}
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(codeExchange)
 
-	resp, err := http.Post(fmt.Sprintf("https://%v/oauth/token", domain), "application/json", b)
+	resp, err := exchanger.Post(fmt.Sprintf("%v/oauth/token", issuer), "application/json", b)
 
 	if err != nil {
 		panic(err)
@@ -168,5 +155,31 @@ func pkceFlow(domain, clientID, audience string) (string, string) {
 	}
 
 	return acr.IDToken, acr.RefreshToken
-	// return "", ""
+}
+
+type challenge struct {
+	Verifier  string
+	Challenge string
+	Algorithm string
+}
+
+func generateChallenge(length int) challenge {
+	c := challenge{}
+
+	c.Verifier = generateRandomString(length)
+
+	csum := sha256.Sum256([]byte(c.Verifier))
+	c.Challenge = base64.RawURLEncoding.EncodeToString(csum[:])
+	c.Algorithm = "S256"
+
+	return c
+}
+
+func pkceFlow(issuer, clientID, audience string) (string, string) {
+	challenger := generateChallenge(32)
+
+	helper := &getAuthorizationCodeFlowHelper{}
+	code := getAuthorizationCode(issuer, clientID, audience, challenger.Challenge, challenger.Algorithm, helper)
+
+	return exchangeAuthorizationCodeForIDAndRefreshToken(issuer, clientID, challenger.Verifier, code, helper.GetCallbackURL(), &http.Client{})
 }

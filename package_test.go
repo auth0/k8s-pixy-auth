@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -38,24 +40,36 @@ func genValidTokenWithExp(exp time.Time) string {
 
 type mockedHTTPTokenExchanger struct {
 	mock.Mock
+	Response *http.Response
 }
 
 func (m *mockedHTTPTokenExchanger) Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
 	args := m.Called(url, contentType, body)
-	return args.Get(0).(*http.Response), args.Error(1)
+	return m.Response, args.Error(0)
 }
 
-type mockedPkceHelper struct {
-	mockedHTTPTokenExchanger
+type mockedAuthorizationFlowHelper struct {
+	mock.Mock
+	CallbackURL string
+	CodeChan    chan string
 }
 
-func (m *mockedPkceHelper) InitCallbackListener(port int) (chan string, string) {
-	args := m.Called(port)
-	return args.Get(0).(chan string), args.String(1)
+func (m *mockedAuthorizationFlowHelper) InitCallbackListener(port int) chan string {
+	m.Called(port)
+	return m.CodeChan
 }
 
-func (m *mockedPkceHelper) OpenURL(url string) {
-	m.Called(url)
+func (m *mockedAuthorizationFlowHelper) OpenURL(url string) error {
+	args := m.Called(url)
+	return args.Error(0)
+}
+
+func (m *mockedAuthorizationFlowHelper) GetCallbackURL() string {
+	return m.CallbackURL
+}
+
+func (m *mockedAuthorizationFlowHelper) CompleteAuthorization(code string) {
+	m.CodeChan <- code
 }
 
 var _ = Describe("Main", func() {
@@ -129,24 +143,28 @@ clients:
 	})
 
 	Describe("pkceFlow", func() {
-		Describe("rawPKCEFlow", func() {
+		Describe("getAuthorizationCode", func() {
+			var helper mockedAuthorizationFlowHelper
+
+			BeforeEach(func() {
+				helper = mockedAuthorizationFlowHelper{
+					CallbackURL: "http://localhost:28840/callback",
+					CodeChan:    make(chan string),
+				}
+				helper.On("InitCallbackListener", mock.Anything)
+				helper.On("OpenURL", mock.Anything).Return(nil)
+			})
+
 			It("opens the correct authorize url", func() {
-				helper := mockedPkceHelper{}
-				codeChan := make(chan string)
-				callbackURL := "http://localhost:28840/callback"
-				helper.On("OpenURL", mock.Anything)
-				helper.On("InitCallbackListener", mock.Anything).Return(codeChan, callbackURL)
-
-				go rawPKCEFlow("https://issuer", "testing_client", "testing_api", &helper)
-
-				codeChan <- ""
-
+				go getAuthorizationCode("https://issuer", "testing_client", "testing_api", "challenge_yo", "S256", &helper)
+				helper.CompleteAuthorization("")
 				helper.AssertExpectations(GinkgoT())
+
 				openedURL := helper.Calls[1].Arguments[0].(string)
 				parsedURL, err := url.Parse(openedURL)
 
 				Expect(err).To(BeNil())
-				Expect(openedURL[:8]).To(Equal("https://"))
+				Expect(parsedURL.Scheme).To(Equal("https"))
 				Expect(parsedURL.Host).To(Equal("issuer"))
 
 				params := parsedURL.Query()
@@ -155,23 +173,61 @@ clients:
 				Expect(params.Get("scope")).To(Equal("openid offline_access email"))
 				Expect(params.Get("response_type")).To(Equal("code"))
 				Expect(params.Get("client_id")).To(Equal("testing_client"))
+				Expect(params.Get("code_challenge")).To(Equal("challenge_yo"))
 				Expect(params.Get("code_challenge_method")).To(Equal("S256"))
-				Expect(params.Get("redirect_uri")).To(Equal("http://localhost:28840/callback"))
+				Expect(params.Get("redirect_uri")).To(Equal(helper.CallbackURL))
 			})
 
-			It("inits the callback listener", func() {
-				helper := mockedPkceHelper{}
-				codeChan := make(chan string)
-				callbackURL := "http://localhost:28840/callback"
-				helper.On("OpenURL", mock.Anything)
-				helper.On("InitCallbackListener", mock.Anything).Return(codeChan, callbackURL)
+			It("handles listening for and returning the auth code", func() {
+				gacCodeChan := make(chan string)
 
-				go rawPKCEFlow("issuer", "client_id", "aud", &helper)
-
-				codeChan <- "code_yo"
+				go func() {
+					gacCodeChan <- getAuthorizationCode("", "", "", "", "", &helper)
+				}()
+				helper.CompleteAuthorization("code_yo")
+				returnedCode := <-gacCodeChan
 				helper.AssertExpectations(GinkgoT())
 
+				Expect(returnedCode).To(Equal("code_yo"))
 				Expect(helper.Calls[0].Arguments[0].(int)).To(Equal(28840))
+			})
+		})
+
+		Describe("exchangeAuthorizationCodeForIDAndRefreshToken", func() {
+			var exchanger mockedHTTPTokenExchanger
+
+			BeforeEach(func() {
+				exchanger = mockedHTTPTokenExchanger{
+					Response: &http.Response{
+						Body: ioutil.NopCloser(bytes.NewReader([]byte("{}"))),
+					},
+				}
+				exchanger.On("Post", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			})
+
+			It("calls the correct URL with the correctly constructed data", func() {
+				expectedBody := `{"grant_type":"authorization_code","client_id":"abc","code_verifier":"verification_yo","code":"this_is_the_code","redirect_uri":"http://localhost:28840/callback"}
+`
+				exchangeAuthorizationCodeForIDAndRefreshToken("http://issuer.domain", "abc", "verification_yo", "this_is_the_code", "http://localhost:28840/callback", &exchanger)
+
+				exchanger.AssertExpectations(GinkgoT())
+
+				postArgs := exchanger.Calls[0].Arguments
+				Expect(postArgs[0].(string)).To(Equal("http://issuer.domain/oauth/token"))
+				Expect(postArgs[1].(string)).To(Equal("application/json"))
+				body := postArgs[2].(*bytes.Buffer)
+				Expect(body.String()).To(Equal(expectedBody))
+			})
+
+			It("returns the id and refresh token from the post response", func() {
+				exchanger.Response.Body = ioutil.NopCloser(bytes.NewReader([]byte(`{"access_token":"access_token_yay","refresh_token":"refresh_token_yay","id_token":"id_token_yay","token_type":"Bearer"}`)))
+
+				idToken, refreshToken := exchangeAuthorizationCodeForIDAndRefreshToken("", "", "", "", "", &exchanger)
+
+				exchanger.AssertExpectations(GinkgoT())
+
+				Expect(idToken).To(Equal("id_token_yay"))
+				Expect(refreshToken).To(Equal("refresh_token_yay"))
 			})
 		})
 	})
@@ -181,16 +237,31 @@ clients:
 			It("calls the correct URL with correctly constructed data", func() {
 				expectedBody := bytes.NewBufferString(`{"grant_type":"refresh_token","client_id":"abc","refresh_token":"token_yay"}
 `)
-				resp := &http.Response{
-					Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"id_token":"new_id_token_yay"}`))),
+				exchanger := mockedHTTPTokenExchanger{
+					Response: &http.Response{
+						Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"id_token":"new_id_token_yay"}`))),
+					},
 				}
-				exchanger := mockedHTTPTokenExchanger{}
-				exchanger.On("Post", "http://issuer.domain/oauth/token", "application/json", expectedBody).Return(resp, nil)
+				exchanger.On("Post", "http://issuer.domain/oauth/token", "application/json", expectedBody).Return(nil)
 
 				idToken := rawRefreshTokenExchangeFlow("http://issuer.domain/", "abc", "token_yay", &exchanger)
 
 				Expect(idToken).To(Equal("new_id_token_yay"))
 			})
+		})
+	})
+
+	Describe("generateChallenge", func() {
+		It("generates challenge and verifier", func() {
+			challenge := generateChallenge(32)
+
+			csum := sha256.Sum256([]byte(challenge.Verifier))
+			expectedChallenge := base64.RawURLEncoding.EncodeToString(csum[:])
+
+			Expect(challenge.Challenge).To(Equal(expectedChallenge))
+			Expect(challenge.Algorithm).To(Equal("S256"))
+			v, _ := base64.RawURLEncoding.DecodeString(challenge.Verifier)
+			Expect(len(v)).To(Equal(32))
 		})
 	})
 })
