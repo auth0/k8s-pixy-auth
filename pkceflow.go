@@ -84,6 +84,32 @@ func listenAndServe(server *http.Server) {
 	}
 }
 
+// pkceHelper handles the main pieces of the PKCE flow
+type pkceHelper interface {
+	httpTokenExchanger
+	// GenerateVerifier() string
+	// BuildChallenge(verifier string) string
+	InitCallbackListener(port int) (chan string, string)
+	// BuildURL(issuer, clientID, audience, challenge, callbackURL string) string
+	OpenURL(string)
+	// ExchangeCodeForIDTokenAndRefreshToken(issuer, clientID, code, verifier, callbackURL string, exchanger httpTokenExchanger)
+}
+
+func rawPKCEFlow(issuer, clientID, audience string, flower pkceHelper) (string, string) {
+	codeChan, _ := flower.InitCallbackListener(28840)
+
+	flower.OpenURL(fmt.Sprintf(
+		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256&redirect_uri=http://localhost:28840/callback",
+		issuer,
+		audience,
+		clientID,
+		"challenge"))
+
+	<-codeChan
+
+	return "", ""
+}
+
 func pkceFlow(domain, clientID, audience string) (string, string) {
 	responseChan := make(chan url.Values)
 
@@ -142,4 +168,5 @@ func pkceFlow(domain, clientID, audience string) (string, string) {
 	}
 
 	return acr.IDToken, acr.RefreshToken
+	// return "", ""
 }
