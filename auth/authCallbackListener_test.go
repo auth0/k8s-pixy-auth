@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"net/http/httptest"
 
 	. "github.com/auth0/auth0-kubectl-auth/auth"
@@ -81,6 +82,38 @@ var _ = Describe("AuthCallbackService", func() {
 		callbackURL := server.GetCallbackURL()
 
 		Expect(callbackURL).To(Equal("http://localhost:1234/callback"))
+	})
+
+	It("returns an error if error is in the callback url", func(done Done) {
+		server := NewCallbackListener(1234, mockHTTP)
+
+		resp := make(chan CallbackResponse)
+		defer close(resp)
+
+		req := httptest.NewRequest("GET", "/callback?error=uh_oh&error_description=something%20went%20wrong", nil)
+
+		go func() {
+			server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
+		}()
+
+		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("uh_oh: something went wrong")}))
+		close(done)
+	})
+
+	It("returns an error if no error or code is in the callback url", func(done Done) {
+		server := NewCallbackListener(1234, mockHTTP)
+
+		resp := make(chan CallbackResponse)
+		defer close(resp)
+
+		req := httptest.NewRequest("GET", "/callback", nil)
+
+		go func() {
+			server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
+		}()
+
+		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("callback completed with no error or code")}))
+		close(done)
 	})
 
 	// It("should shutdown after wait time")

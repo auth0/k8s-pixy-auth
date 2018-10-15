@@ -15,7 +15,10 @@ func pkceFlow(issuer, clientID, audience string) *auth.TokenResult {
 
 	idTokenProvider := auth.NewDefaultIdTokenProvider(issuerData)
 
-	//todo: handle errors
-	tokenResult, _ := idTokenProvider.Authenticate()
+	//todo: handle errors better
+	tokenResult, err := idTokenProvider.Authenticate()
+	if err != nil {
+		panic(err)
+	}
 	return tokenResult
 }

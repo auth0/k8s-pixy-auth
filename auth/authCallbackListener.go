@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,19 +33,24 @@ func NewCallbackListener(port int, httpServer HttpServer) *CallbackService {
 }
 
 func (c *CallbackService) GetCallbackURL() string {
-	//todo: this base location should be pulled from server
 	return fmt.Sprintf("http://%s/callback", c.addr)
 }
 
-func (c *CallbackService) BuildCodeResponseHandler(response chan CallbackResponse) func(w http.ResponseWriter, r *http.Request) {
+func (c *CallbackService) BuildCodeResponseHandler(responseC chan CallbackResponse) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		code := r.URL.Query().Get("code")
+		response := CallbackResponse{}
 
-		//TODO: provide errors if code is missing
-		response <- CallbackResponse{
-			Code:  code,
-			Error: nil,
+		callbackErr := r.URL.Query().Get("error")
+
+		if callbackErr != "" {
+			response.Error = fmt.Errorf("%s: %s", callbackErr, r.URL.Query().Get("error_description"))
+		} else if code := r.URL.Query().Get("code"); code != "" {
+			response.Code = code
+		} else {
+			response.Error = errors.New("callback completed with no error or code")
 		}
+
+		responseC <- response
 
 		w.WriteHeader(http.StatusOK)
 
