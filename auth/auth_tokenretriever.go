@@ -12,7 +12,7 @@ type TokenRetriever struct {
 	transport    AuthTransport
 }
 
-type AuthorizationCodeResponse struct {
+type AuthTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	IDToken      string `json:"id_token"`
@@ -27,12 +27,23 @@ type AuthCodeExchangeRequest struct {
 	RedirectURI  string
 }
 
+type RefreshTokenExchangeRequest struct {
+	ClientID     string
+	RefreshToken string
+}
+
 type AuthTokenRequest struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	CodeVerifier string `json:"code_verifier"`
 	Code         string `json:"code"`
 	RedirectURI  string `json:"redirect_uri"`
+}
+
+type RefreshTokenRequest struct {
+	GrantType    string `json:"grant_type"`
+	ClientID     string `json:"client_id"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type AuthTransport interface {
@@ -83,15 +94,40 @@ func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResul
 
 	defer resp.Body.Close()
 
-	acr := AuthorizationCodeResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&acr)
+	atr := AuthTokenResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&atr)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TokenResult{
-		IDToken:      acr.IDToken,
-		RefreshToken: acr.RefreshToken,
-		ExpiresIn:    acr.ExpiresIn,
+		IDToken:      atr.IDToken,
+		RefreshToken: atr.RefreshToken,
+		ExpiresIn:    atr.ExpiresIn,
+	}, nil
+}
+
+func (ce *TokenRetriever) ExchangeRefreshToken(req RefreshTokenExchangeRequest) (*TokenResult, error) {
+	body := RefreshTokenRequest{
+		GrantType:    "refresh_token",
+		ClientID:     req.ClientID,
+		RefreshToken: req.RefreshToken,
+	}
+
+	resp, _ := ce.transport.Post(
+		fmt.Sprintf("%s/oauth/token", ce.authEndpoint),
+		body)
+	defer resp.Body.Close()
+
+	atr := AuthTokenResponse{}
+	err := json.NewDecoder(resp.Body).Decode(&atr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TokenResult{
+		IDToken:      atr.IDToken,
+		RefreshToken: req.RefreshToken,
+		ExpiresIn:    atr.ExpiresIn,
 	}, nil
 }

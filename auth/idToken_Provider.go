@@ -14,6 +14,7 @@ type AuthCodeProvider interface {
 }
 type AuthTokenExchanger interface {
 	ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error)
+	ExchangeRefreshToken(req RefreshTokenExchangeRequest) (*TokenResult, error)
 }
 
 type TokenResult struct {
@@ -76,6 +77,20 @@ func (p *IdTokenProvider) Authenticate() (*TokenResult, error) {
 	}
 
 	tokenResult, err := p.exchanger.ExchangeCode(exchangeRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenResult, nil
+}
+
+func (p *IdTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult, error) {
+	exchangeRequest := RefreshTokenExchangeRequest{
+		ClientID:     p.issuerData.ClientID,
+		RefreshToken: refreshToken,
+	}
+
+	tokenResult, err := p.exchanger.ExchangeRefreshToken(exchangeRequest)
 	if err != nil {
 		return nil, err
 	}
