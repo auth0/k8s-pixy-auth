@@ -21,21 +21,21 @@ func (cp *MockCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, error
 	return cp.AuthCodeResult, cp.ReturnsError
 }
 
-type MockTokenProvider struct {
+type MockTokenExchanger struct {
 	CalledWithRequest *AuthCodeExchangeRequest
 	Called            bool
 	ReturnsTokens     *TokenResult
 	ReturnsError      error
 }
 
-func (tp *MockTokenProvider) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
-	tp.CalledWithRequest = &req
-	return tp.ReturnsTokens, tp.ReturnsError
+func (te *MockTokenExchanger) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
+	te.CalledWithRequest = &req
+	return te.ReturnsTokens, te.ReturnsError
 }
 
 var _ = Describe("userIdTokenProvider", func() {
 	var mockCodeProvider *MockCodeProvider
-	var mockTokenProvider *MockTokenProvider
+	var mockTokenExchanger *MockTokenExchanger
 
 	challengeResult := Challenge{
 		Code:     "challenge_code_1234",
@@ -60,23 +60,23 @@ var _ = Describe("userIdTokenProvider", func() {
 		}
 
 		expectedTokens := TokenResult{IDToken: "idToken", RefreshToken: "refreshToken", ExpiresIn: 1234}
-		mockTokenProvider = &MockTokenProvider{
+		mockTokenExchanger = &MockTokenExchanger{
 			ReturnsTokens: &expectedTokens,
 		}
 	})
 
-	It("invokes TokenProvider with returned code", func() {
+	It("invokes TokenExchanger with returned code", func() {
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
-			mockTokenProvider,
+			mockTokenExchanger,
 			mockChallenger,
 		)
 
 		_, _ = provider.Authenticate()
 		Expect(mockCodeProvider.Called).To(BeTrue())
 		Expect(mockCodeProvider.CalledWithChallenge).To(Equal(challengeResult))
-		Expect(mockTokenProvider.CalledWithRequest).To(Equal(&AuthCodeExchangeRequest{
+		Expect(mockTokenExchanger.CalledWithRequest).To(Equal(&AuthCodeExchangeRequest{
 			ClientID:     issuer.ClientID,
 			CodeVerifier: challengeResult.Verifier,
 			Code:         "1234",
@@ -84,17 +84,17 @@ var _ = Describe("userIdTokenProvider", func() {
 		}))
 	})
 
-	It("returns TokensResult from TokenProvider", func() {
+	It("returns TokensResult from TokenExchanger", func() {
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
-			mockTokenProvider,
+			mockTokenExchanger,
 			mockChallenger,
 		)
 
 		tokens, _ := provider.Authenticate()
 
-		Expect(tokens).To(Equal(mockTokenProvider.ReturnsTokens))
+		Expect(tokens).To(Equal(mockTokenExchanger.ReturnsTokens))
 	})
 
 	It("returns an error if code request errors", func() {
@@ -103,7 +103,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
-			mockTokenProvider,
+			mockTokenExchanger,
 			mockChallenger,
 		)
 
@@ -113,13 +113,13 @@ var _ = Describe("userIdTokenProvider", func() {
 	})
 
 	It("returns an error if token provider errors", func() {
-		mockTokenProvider.ReturnsError = errors.New("someerror")
-		mockTokenProvider.ReturnsTokens = nil
+		mockTokenExchanger.ReturnsError = errors.New("someerror")
+		mockTokenExchanger.ReturnsTokens = nil
 
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
-			mockTokenProvider,
+			mockTokenExchanger,
 			mockChallenger,
 		)
 
