@@ -71,7 +71,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		Method:   "SHA",
 	}
 
-	It("should wait response from callback", func(done Done) {
+	It("waits for a response from the callback", func(done Done) {
 		mockListener := newMockCallbackListener()
 		provider := NewAuthCodeProvider(
 			issuerData,
@@ -85,21 +85,21 @@ var _ = Describe("AuthCodeProvider", func() {
 		close(done)
 	})
 
-	It("closes the listener after receiving the code", func(done Done) {
+	It("closes the listener after receiving the code", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewAuthCodeProvider(
 			issuerData,
 			mockListener,
 			&mockInteractor{},
 		)
-		go provider.GetCode(challenge)
+		go mockListener.CompleteCallback(CallbackResponse{})
 
-		mockListener.CompleteCallback(CallbackResponse{})
+		provider.GetCode(challenge)
+
 		Expect(mockListener.CloseCalled).To(BeTrue())
-		close(done)
 	})
 
-	It("should open URL with expected auth params", func(done Done) {
+	It("opens the URL with expected auth params", func() {
 		mockListener := newMockCallbackListener()
 		mockOSInteractor := &mockInteractor{}
 		provider := NewAuthCodeProvider(
@@ -107,9 +107,10 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			mockOSInteractor,
 		)
-		go provider.GetCode(challenge)
 
-		mockListener.CompleteCallback(CallbackResponse{})
+		go mockListener.CompleteCallback(CallbackResponse{})
+
+		provider.GetCode(challenge)
 
 		parsedURL, err := url.Parse(mockOSInteractor.Url)
 
@@ -126,10 +127,9 @@ var _ = Describe("AuthCodeProvider", func() {
 		Expect(params.Get("code_challenge")).To(Equal(challenge.Code))
 		Expect(params.Get("code_challenge_method")).To(Equal(challenge.Method))
 		Expect(params.Get("redirect_uri")).To(Equal(mockListener.GetCallbackURL()))
-		close(done)
 	})
 
-	It("Returns code provided by listener", func() {
+	It("returns code provided by listener", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewAuthCodeProvider(
 			issuerData,
@@ -137,9 +137,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			&mockInteractor{},
 		)
 
-		go func() {
-			mockListener.CompleteCallback(CallbackResponse{Code: "mycode", Error: nil})
-		}()
+		go mockListener.CompleteCallback(CallbackResponse{Code: "mycode", Error: nil})
 
 		result, _ := provider.GetCode(challenge)
 		Expect(result.Code).To(Equal("mycode"))
@@ -147,7 +145,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	})
 
-	It("should raise errors if command execution fails", func() {
+	It("raises errors if command execution fails", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewAuthCodeProvider(
 			issuerData,
@@ -162,7 +160,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		Expect(err.Error()).To(Equal("someerror"))
 	})
 
-	It("should raise error if listener returns error", func() {
+	It("raises error if listener returns error", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewAuthCodeProvider(
 			issuerData,
@@ -170,12 +168,10 @@ var _ = Describe("AuthCodeProvider", func() {
 			&mockInteractor{},
 		)
 
-		go func() {
-			mockListener.CompleteCallback(CallbackResponse{
-				Code:  "invalid",
-				Error: errors.New("someerror"),
-			})
-		}()
+		go mockListener.CompleteCallback(CallbackResponse{
+			Code:  "invalid",
+			Error: errors.New("someerror"),
+		})
 
 		result, err := provider.GetCode(challenge)
 

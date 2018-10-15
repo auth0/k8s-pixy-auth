@@ -3,10 +3,9 @@ package auth_test
 import (
 	"errors"
 
+	. "github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/auth0/auth0-kubectl-auth/auth"
 )
 
 type MockCodeProvider struct {
@@ -66,7 +65,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		}
 	})
 
-	It("Invokes TokenProvider with returned code", func() {
+	It("invokes TokenProvider with returned code", func() {
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
@@ -85,7 +84,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		}))
 	})
 
-	It("Returns TokensResult from TokenProvider", func() {
+	It("returns TokensResult from TokenProvider", func() {
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
@@ -98,7 +97,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		Expect(tokens).To(Equal(mockTokenProvider.ReturnsTokens))
 	})
 
-	It("Returns an error if code request errors", func() {
+	It("returns an error if code request errors", func() {
 		mockCodeProvider.ReturnsError = errors.New("someerror")
 
 		provider := NewIdTokenProvider(
@@ -113,7 +112,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		Expect(err.Error()).To(Equal("someerror"))
 	})
 
-	It("Returns an error if token provider errors", func() {
+	It("returns an error if token provider errors", func() {
 		mockTokenProvider.ReturnsError = errors.New("someerror")
 		mockTokenProvider.ReturnsTokens = nil
 

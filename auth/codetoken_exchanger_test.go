@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	. "github.com/auth0/auth0-kubectl-auth/auth"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -33,7 +32,7 @@ var _ = Describe("CodetokenExchanger", func() {
 		RedirectURI:  "https://redirect",
 	}
 
-	It("should post correct request", func() {
+	It("posts correct request", func() {
 		mockTransport := &mockHttpTransport{
 			Response: buildResponse(200, nil),
 		}
@@ -52,7 +51,7 @@ var _ = Describe("CodetokenExchanger", func() {
 		}))
 	})
 
-	It("Should return tokens from response", func() {
+	It("returns tokens from response", func() {
 		mockTransport := &mockHttpTransport{
 			Response: buildResponse(200, &AuthorizationCodeResponse{
 				ExpiresIn:    1000,
@@ -73,7 +72,7 @@ var _ = Describe("CodetokenExchanger", func() {
 		}))
 	})
 
-	// It("should handle request errors")
+	// It("handles request errors")
 })
 
 func buildResponse(statusCode int, body interface{}) *http.Response {

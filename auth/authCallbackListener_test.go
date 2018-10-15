@@ -32,7 +32,7 @@ var _ = Describe("AuthCallbackService", func() {
 			httpRecorder:   httptest.NewRecorder(),
 		}
 	})
-	It("should start server", func() {
+	It("starts the server", func() {
 		server := NewCallbackListener(1234, mockHTTP)
 
 		resp := make(chan CallbackResponse)
@@ -43,7 +43,7 @@ var _ = Describe("AuthCallbackService", func() {
 		Expect(mockHTTP.StartCalled).To(BeTrue())
 	})
 
-	It("should return code after callback", func(done Done) {
+	It("returns the code after callback", func() {
 		server := NewCallbackListener(1234, mockHTTP)
 
 		resp := make(chan CallbackResponse)
@@ -51,12 +51,9 @@ var _ = Describe("AuthCallbackService", func() {
 
 		req := httptest.NewRequest("GET", "/callback?code=1234", nil)
 
-		go func() {
-			server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
-		}()
+		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Code: "1234"}))
-		close(done)
 	})
 
 	It("returns the correct callback url for the listener", func() {
@@ -67,7 +64,7 @@ var _ = Describe("AuthCallbackService", func() {
 		Expect(callbackURL).To(Equal("http://localhost:1234/callback"))
 	})
 
-	It("returns an error if error is in the callback url", func(done Done) {
+	It("returns an error if error is in the callback url", func() {
 		server := NewCallbackListener(1234, mockHTTP)
 
 		resp := make(chan CallbackResponse)
@@ -75,15 +72,12 @@ var _ = Describe("AuthCallbackService", func() {
 
 		req := httptest.NewRequest("GET", "/callback?error=uh_oh&error_description=something%20went%20wrong", nil)
 
-		go func() {
-			server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
-		}()
+		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("uh_oh: something went wrong")}))
-		close(done)
 	})
 
-	It("returns an error if no error or code is in the callback url", func(done Done) {
+	It("returns an error if no error or code is in the callback url", func() {
 		server := NewCallbackListener(1234, mockHTTP)
 
 		resp := make(chan CallbackResponse)
@@ -91,14 +85,11 @@ var _ = Describe("AuthCallbackService", func() {
 
 		req := httptest.NewRequest("GET", "/callback", nil)
 
-		go func() {
-			server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
-		}()
+		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("callback completed with no error or code")}))
-		close(done)
 	})
 
-	// It("should shutdown after wait time")
-	// It("should shutdown and error if called back with no code")
+	// It("shuts down after wait time")
+	// It("shuts down and errors if called back with no code")
 })
