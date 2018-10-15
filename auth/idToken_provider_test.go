@@ -24,12 +24,13 @@ func (cp *MockCodeProvider) GetCode(challenge Challenge) AuthCodeResult {
 type MockTokenProvider struct {
 	CalledWithRequest *AuthCodeExchangeRequest
 	Called            bool
-	ReturnsTokens     TokenResult
+	ReturnsTokens     *TokenResult
+	ReturnsError      error
 }
 
 func (tp *MockTokenProvider) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
 	tp.CalledWithRequest = &req
-	return &tp.ReturnsTokens, nil
+	return tp.ReturnsTokens, tp.ReturnsError
 }
 
 var _ = Describe("userIdTokenProvider", func() {
@@ -61,7 +62,7 @@ var _ = Describe("userIdTokenProvider", func() {
 
 		expectedTokens := TokenResult{IDToken: "idToken", RefreshToken: "refreshToken", ExpiresIn: 1234}
 		mockTokenProvider = &MockTokenProvider{
-			ReturnsTokens: expectedTokens,
+			ReturnsTokens: &expectedTokens,
 		}
 	})
 
@@ -94,13 +95,29 @@ var _ = Describe("userIdTokenProvider", func() {
 
 		tokens, _ := provider.Authenticate()
 
-		Expect(tokens).To(Equal(&mockTokenProvider.ReturnsTokens))
+		Expect(tokens).To(Equal(mockTokenProvider.ReturnsTokens))
 	})
 
 	It("Returns an error if code request errors", func() {
 		mockCodeProvider.AuthCodeResult = AuthCodeResult{
 			Error: errors.New("someerror"),
 		}
+
+		provider := NewIdTokenProvider(
+			issuer,
+			mockCodeProvider,
+			mockTokenProvider,
+			mockChallenger,
+		)
+
+		_, err := provider.Authenticate()
+
+		Expect(err.Error()).To(Equal("someerror"))
+	})
+
+	It("Returns an error if token provider errors", func() {
+		mockTokenProvider.ReturnsError = errors.New("someerror")
+		mockTokenProvider.ReturnsTokens = nil
 
 		provider := NewIdTokenProvider(
 			issuer,

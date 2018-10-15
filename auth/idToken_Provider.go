@@ -75,7 +75,10 @@ func (p *IdTokenProvider) Authenticate() (*TokenResult, error) {
 		RedirectURI:  codeResult.RedirectURI,
 	}
 
-	//todo: handle errors
-	tokenResult, _ := p.exchanger.ExchangeCode(exchangeRequest)
+	tokenResult, err := p.exchanger.ExchangeCode(exchangeRequest)
+	if err != nil {
+		return nil, err
+	}
+
 	return tokenResult, nil
 }
