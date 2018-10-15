@@ -11,7 +11,6 @@ type LocalhostCodeProvider struct {
 type AuthCodeResult struct {
 	Code        string
 	RedirectURI string
-	Error       error
 }
 
 type CallbackResponse struct {
@@ -46,12 +45,12 @@ type AuthCodeRequest struct {
 	Response chan AuthCodeResult
 }
 
-func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) AuthCodeResult {
+func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
 	go cp.listener.AwaitResponse(codeReceiverCh)
 
-	cp.osInteractor.OpenURL(fmt.Sprintf(
+	if err := cp.osInteractor.OpenURL(fmt.Sprintf(
 		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s",
 		cp.IssuerEndpoint,
 		cp.Audience,
@@ -59,13 +58,18 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) AuthCodeResult {
 		challenge.Code,
 		challenge.Method,
 		cp.listener.GetURL(),
-	))
+	)); err != nil {
+		return nil, err
+	}
 
 	callbackResult := <-codeReceiverCh
 
-	return AuthCodeResult{
+	if callbackResult.Error != nil {
+		return nil, callbackResult.Error
+	}
+
+	return &AuthCodeResult{
 		Code:        callbackResult.Code,
 		RedirectURI: cp.listener.GetURL(),
-		Error:       callbackResult.Error,
-	}
+	}, nil
 }

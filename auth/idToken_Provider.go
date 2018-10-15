@@ -10,7 +10,7 @@ type IdTokenProvider struct {
 }
 
 type AuthCodeProvider interface {
-	GetCode(challenge Challenge) AuthCodeResult
+	GetCode(challenge Challenge) (*AuthCodeResult, error)
 }
 type AuthTokenExchanger interface {
 	ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error)
@@ -62,10 +62,10 @@ func NewDefaultIdTokenProvider(issuerData Issuer) *IdTokenProvider {
 
 func (p *IdTokenProvider) Authenticate() (*TokenResult, error) {
 	challenge := p.challenger()
-	codeResult := p.codeProvider.GetCode(challenge)
+	codeResult, err := p.codeProvider.GetCode(challenge)
 
-	if codeResult.Error != nil {
-		return nil, codeResult.Error
+	if err != nil {
+		return nil, err
 	}
 
 	exchangeRequest := AuthCodeExchangeRequest{

@@ -12,13 +12,14 @@ import (
 type MockCodeProvider struct {
 	Called              bool
 	CalledWithChallenge Challenge
-	AuthCodeResult      AuthCodeResult
+	AuthCodeResult      *AuthCodeResult
+	ReturnsError        error
 }
 
-func (cp *MockCodeProvider) GetCode(challenge Challenge) AuthCodeResult {
+func (cp *MockCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, error) {
 	cp.Called = true
 	cp.CalledWithChallenge = challenge
-	return cp.AuthCodeResult
+	return cp.AuthCodeResult, cp.ReturnsError
 }
 
 type MockTokenProvider struct {
@@ -53,10 +54,9 @@ var _ = Describe("userIdTokenProvider", func() {
 
 	BeforeEach(func() {
 		mockCodeProvider = &MockCodeProvider{
-			AuthCodeResult: AuthCodeResult{
-				"1234",
-				"http://callback",
-				nil,
+			AuthCodeResult: &AuthCodeResult{
+				Code:        "1234",
+				RedirectURI: "http://callback",
 			},
 		}
 
@@ -99,9 +99,7 @@ var _ = Describe("userIdTokenProvider", func() {
 	})
 
 	It("Returns an error if code request errors", func() {
-		mockCodeProvider.AuthCodeResult = AuthCodeResult{
-			Error: errors.New("someerror"),
-		}
+		mockCodeProvider.ReturnsError = errors.New("someerror")
 
 		provider := NewIdTokenProvider(
 			issuer,
