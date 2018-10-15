@@ -14,6 +14,7 @@ type mockCallbackListener struct {
 	responseChReady chan bool
 	AwaitCalled     bool
 	ListenURL       string
+	CloseCalled     bool
 }
 
 func newMockCallbackListener() *mockCallbackListener {
@@ -41,6 +42,10 @@ func (cb *mockCallbackListener) AwaitResponse(resp chan CallbackResponse) {
 
 func (cb *mockCallbackListener) GetCallbackURL() string {
 	return cb.ListenURL
+}
+
+func (cb *mockCallbackListener) Close() {
+	cb.CloseCalled = true
 }
 
 type mockInteractor struct {
@@ -77,6 +82,20 @@ var _ = Describe("AuthCodeProvider", func() {
 
 		mockListener.CompleteCallback(CallbackResponse{})
 		Expect(mockListener.AwaitCalled).To(BeTrue())
+		close(done)
+	})
+
+	It("closes the listener after receiving the code", func(done Done) {
+		mockListener := newMockCallbackListener()
+		provider := NewAuthCodeProvider(
+			issuerData,
+			mockListener,
+			&mockInteractor{},
+		)
+		go provider.GetCode(challenge)
+
+		mockListener.CompleteCallback(CallbackResponse{})
+		Expect(mockListener.CloseCalled).To(BeTrue())
 		close(done)
 	})
 

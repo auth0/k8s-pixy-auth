@@ -44,19 +44,21 @@ func (c *CallbackService) BuildCodeResponseHandler(responseC chan CallbackRespon
 
 		if callbackErr != "" {
 			response.Error = fmt.Errorf("%s: %s", callbackErr, r.URL.Query().Get("error_description"))
+			w.Write([]byte("An error occured. Please check terminal for output."))
 		} else if code := r.URL.Query().Get("code"); code != "" {
 			response.Code = code
+			w.Write([]byte("You've been authorized and may now close this browser page."))
 		} else {
 			response.Error = errors.New("callback completed with no error or code")
+			w.Write([]byte("An error occured. Please check terminal for output."))
 		}
 
 		responseC <- response
-
-		w.WriteHeader(http.StatusOK)
-
-		//TODO: Defer/delay shutdown offer Close()?
-		c.httpServer.Shutdown()
 	}
+}
+
+func (c *CallbackService) Close() {
+	c.httpServer.Shutdown()
 }
 
 func (c *CallbackService) AwaitResponse(response chan CallbackResponse) {
@@ -65,7 +67,6 @@ func (c *CallbackService) AwaitResponse(response chan CallbackResponse) {
 }
 
 func (s *localhostHttpServer) Start(addr string) {
-	//todo: should only ever serve localhost, not any interface (e.g. :0)
 	s.server = &http.Server{
 		Addr: addr,
 	}

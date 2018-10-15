@@ -21,6 +21,7 @@ type CallbackResponse struct {
 type AuthCallbackListener interface {
 	GetCallbackURL() string
 	AwaitResponse(response chan CallbackResponse)
+	Close()
 }
 
 type OSInteractor interface {
@@ -68,6 +69,7 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, 
 		return nil, callbackResult.Error
 	}
 
+	cp.listener.Close()
 	return &AuthCodeResult{
 		Code:        callbackResult.Code,
 		RedirectURI: cp.listener.GetCallbackURL(),

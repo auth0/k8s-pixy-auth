@@ -59,23 +59,6 @@ var _ = Describe("AuthCallbackService", func() {
 		close(done)
 	})
 
-	It("should shutdown server after callback received", func(done Done) {
-		server := NewCallbackListener(1234, mockHTTP)
-
-		resp := make(chan CallbackResponse)
-		defer close(resp)
-
-		req := httptest.NewRequest("GET", "/callback?code=1234", nil)
-
-		go func() {
-			server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
-		}()
-
-		<-resp
-		Expect(mockHTTP.ShutdownCalled).To(BeTrue())
-		close(done)
-	})
-
 	It("returns the correct callback url for the listener", func() {
 		server := NewCallbackListener(1234, mockHTTP)
 
