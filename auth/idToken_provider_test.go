@@ -1,6 +1,8 @@
 package auth_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -10,17 +12,13 @@ import (
 type MockCodeProvider struct {
 	Called              bool
 	CalledWithChallenge Challenge
-	ReturnsCode         string
+	AuthCodeResult      AuthCodeResult
 }
 
 func (cp *MockCodeProvider) GetCode(challenge Challenge) AuthCodeResult {
 	cp.Called = true
 	cp.CalledWithChallenge = challenge
-	return AuthCodeResult{
-		cp.ReturnsCode,
-		"http://callback",
-		nil,
-	}
+	return cp.AuthCodeResult
 }
 
 type MockTokenProvider struct {
@@ -35,6 +33,9 @@ func (tp *MockTokenProvider) ExchangeCode(req AuthCodeExchangeRequest) (*TokenRe
 }
 
 var _ = Describe("userIdTokenProvider", func() {
+	var mockCodeProvider *MockCodeProvider
+	var mockTokenProvider *MockTokenProvider
+
 	challengeResult := Challenge{
 		Code:     "challenge_code_1234",
 		Verifier: "verifier_1234",
@@ -49,12 +50,22 @@ var _ = Describe("userIdTokenProvider", func() {
 
 	mockChallenger := func() Challenge { return challengeResult }
 
-	It("Invokes TokenProvider with returned code", func() {
-		mockCodeProvider := &MockCodeProvider{
-			ReturnsCode: "1234",
+	BeforeEach(func() {
+		mockCodeProvider = &MockCodeProvider{
+			AuthCodeResult: AuthCodeResult{
+				"1234",
+				"http://callback",
+				nil,
+			},
 		}
-		mockTokenProvider := &MockTokenProvider{}
 
+		expectedTokens := TokenResult{IDToken: "idToken", RefreshToken: "refreshToken", ExpiresIn: 1234}
+		mockTokenProvider = &MockTokenProvider{
+			ReturnsTokens: expectedTokens,
+		}
+	})
+
+	It("Invokes TokenProvider with returned code", func() {
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
@@ -74,14 +85,6 @@ var _ = Describe("userIdTokenProvider", func() {
 	})
 
 	It("Returns TokensResult from TokenProvider", func() {
-		mockCodeProvider := &MockCodeProvider{
-			ReturnsCode: "1234",
-		}
-		expectedTokens := TokenResult{IDToken: "idToken", RefreshToken: "refreshToken", ExpiresIn: 1234}
-		mockTokenProvider := &MockTokenProvider{
-			ReturnsTokens: expectedTokens,
-		}
-
 		provider := NewIdTokenProvider(
 			issuer,
 			mockCodeProvider,
@@ -91,6 +94,23 @@ var _ = Describe("userIdTokenProvider", func() {
 
 		tokens, _ := provider.Authenticate()
 
-		Expect(tokens).To(Equal(&expectedTokens))
+		Expect(tokens).To(Equal(&mockTokenProvider.ReturnsTokens))
+	})
+
+	It("Returns an error if code request errors", func() {
+		mockCodeProvider.AuthCodeResult = AuthCodeResult{
+			Error: errors.New("someerror"),
+		}
+
+		provider := NewIdTokenProvider(
+			issuer,
+			mockCodeProvider,
+			mockTokenProvider,
+			mockChallenger,
+		)
+
+		_, err := provider.Authenticate()
+
+		Expect(err.Error()).To(Equal("someerror"))
 	})
 })

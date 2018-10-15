@@ -46,6 +46,9 @@ func (c *CallbackService) BuildCodeResponseHandler(response chan CallbackRespons
 			Error: nil,
 		}
 
+		w.WriteHeader(http.StatusOK)
+
+		//TODO: Defer/delay shutdown offer Close()?
 		c.httpServer.Shutdown()
 	}
 }

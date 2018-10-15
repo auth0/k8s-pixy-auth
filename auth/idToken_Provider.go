@@ -64,6 +64,10 @@ func (p *IdTokenProvider) Authenticate() (*TokenResult, error) {
 	challenge := p.challenger()
 	codeResult := p.codeProvider.GetCode(challenge)
 
+	if codeResult.Error != nil {
+		return nil, codeResult.Error
+	}
+
 	exchangeRequest := AuthCodeExchangeRequest{
 		Code:         codeResult.Code,
 		CodeVerifier: challenge.Verifier,
