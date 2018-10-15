@@ -8,11 +8,11 @@ import (
 )
 
 type HttpServer interface {
-	Start(port int)
+	Start(addr string)
 	Shutdown()
 }
 type CallbackService struct {
-	port       int
+	addr       string
 	httpServer HttpServer
 }
 
@@ -26,14 +26,14 @@ func NewLocalhostCallbackListener(port int) *CallbackService {
 
 func NewCallbackListener(port int, httpServer HttpServer) *CallbackService {
 	return &CallbackService{
-		port,
+		fmt.Sprintf("localhost:%d", port),
 		httpServer,
 	}
 }
 
 func (c *CallbackService) GetURL() string {
 	//todo: this base location should be pulled from server
-	return fmt.Sprintf("http://localhost:%d/callback", c.port)
+	return fmt.Sprintf("http://%s/callback", c.addr)
 }
 
 func (c *CallbackService) BuildCodeResponseHandler(response chan CallbackResponse) func(w http.ResponseWriter, r *http.Request) {
@@ -54,14 +54,14 @@ func (c *CallbackService) BuildCodeResponseHandler(response chan CallbackRespons
 }
 
 func (c *CallbackService) AwaitResponse(response chan CallbackResponse) {
-	c.httpServer.Start(c.port)
+	c.httpServer.Start(c.addr)
 	http.HandleFunc("/callback", c.BuildCodeResponseHandler(response))
 }
 
-func (s *localhostHttpServer) Start(port int) {
+func (s *localhostHttpServer) Start(addr string) {
 	//todo: should only ever serve localhost, not any interface (e.g. :0)
 	s.server = &http.Server{
-		Addr: fmt.Sprintf(":%d", port),
+		Addr: addr,
 	}
 
 	go func() {

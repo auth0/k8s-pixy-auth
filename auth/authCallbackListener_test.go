@@ -13,7 +13,7 @@ type MockHttpServer struct {
 	httpRecorder                *httptest.ResponseRecorder
 }
 
-func (s *MockHttpServer) Start(port int) {
+func (s *MockHttpServer) Start(addr string) {
 	s.StartCalled = true
 }
 
@@ -73,6 +73,14 @@ var _ = Describe("AuthCallbackService", func() {
 		<-resp
 		Expect(mockHTTP.ShutdownCalled).To(BeTrue())
 		close(done)
+	})
+
+	It("returns the correct callback url for the listener", func() {
+		server := NewCallbackListener(1234, mockHTTP)
+
+		callbackURL := server.GetURL()
+
+		Expect(callbackURL).To(Equal("http://localhost:1234/callback"))
 	})
 
 	// It("should shutdown after wait time")
