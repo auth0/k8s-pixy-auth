@@ -19,7 +19,7 @@ type CallbackResponse struct {
 }
 
 type AuthCallbackListener interface {
-	GetURL() string
+	GetCallbackURL() string
 	AwaitResponse(response chan CallbackResponse)
 }
 
@@ -57,7 +57,7 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, 
 		cp.ClientID,
 		challenge.Code,
 		challenge.Method,
-		cp.listener.GetURL(),
+		cp.listener.GetCallbackURL(),
 	)); err != nil {
 		return nil, err
 	}
@@ -70,6 +70,6 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, 
 
 	return &AuthCodeResult{
 		Code:        callbackResult.Code,
-		RedirectURI: cp.listener.GetURL(),
+		RedirectURI: cp.listener.GetCallbackURL(),
 	}, nil
 }

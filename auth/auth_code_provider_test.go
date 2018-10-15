@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	. "github.com/auth0/auth0-kubectl-auth/auth"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -40,7 +39,7 @@ func (cb *mockCallbackListener) AwaitResponse(resp chan CallbackResponse) {
 	cb.responseChReady <- true
 }
 
-func (cb *mockCallbackListener) GetURL() string {
+func (cb *mockCallbackListener) GetCallbackURL() string {
 	return cb.ListenURL
 }
 
@@ -107,7 +106,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		Expect(params.Get("client_id")).To(Equal(issuerData.ClientID))
 		Expect(params.Get("code_challenge")).To(Equal(challenge.Code))
 		Expect(params.Get("code_challenge_method")).To(Equal(challenge.Method))
-		Expect(params.Get("redirect_uri")).To(Equal(mockListener.GetURL()))
+		Expect(params.Get("redirect_uri")).To(Equal(mockListener.GetCallbackURL()))
 		close(done)
 	})
 
@@ -125,7 +124,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 		result, _ := provider.GetCode(challenge)
 		Expect(result.Code).To(Equal("mycode"))
-		Expect(result.RedirectURI).To(Equal(mockListener.GetURL()))
+		Expect(result.RedirectURI).To(Equal(mockListener.GetCallbackURL()))
 
 	})
 

@@ -31,7 +31,7 @@ func NewCallbackListener(port int, httpServer HttpServer) *CallbackService {
 	}
 }
 
-func (c *CallbackService) GetURL() string {
+func (c *CallbackService) GetCallbackURL() string {
 	//todo: this base location should be pulled from server
 	return fmt.Sprintf("http://%s/callback", c.addr)
 }

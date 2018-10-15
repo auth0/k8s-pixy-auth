@@ -78,7 +78,7 @@ var _ = Describe("AuthCallbackService", func() {
 	It("returns the correct callback url for the listener", func() {
 		server := NewCallbackListener(1234, mockHTTP)
 
-		callbackURL := server.GetURL()
+		callbackURL := server.GetCallbackURL()
 
 		Expect(callbackURL).To(Equal("http://localhost:1234/callback"))
 	})
