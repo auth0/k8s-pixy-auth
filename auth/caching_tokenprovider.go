@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"time"
+
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
@@ -10,6 +12,7 @@ type cachingProvider interface {
 
 type tokenProvider interface {
 	FromRefreshToken(refreshToken string) (*TokenResult, error)
+	Authenticate() (*TokenResult, error)
 }
 
 type cachingTokenProvider struct {
@@ -18,12 +21,50 @@ type cachingTokenProvider struct {
 }
 
 func (c *cachingTokenProvider) GetIDToken() string {
-	tokenResult, _ := c.cache.GetTokens()
+	tokenResult := c.refreshFromCache()
 
-	p := jwt.Parser{}
-	if _, _, err := p.ParseUnverified(tokenResult.IDToken, jwt.MapClaims{}); err != nil {
-		tokenResult, _ = c.idTokenProvider.FromRefreshToken(tokenResult.RefreshToken)
+	if tokenResult == nil {
+		tokenResult, _ = c.idTokenProvider.Authenticate()
 	}
 
 	return tokenResult.IDToken
+}
+
+func (c *cachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult {
+	tokenResult, refreshErr := c.idTokenProvider.FromRefreshToken(refreshToken)
+	if refreshErr != nil {
+		return nil
+	}
+
+	return tokenResult
+}
+
+func (c *cachingTokenProvider) refreshFromCache() *TokenResult {
+	tokenResult, _ := c.cache.GetTokens()
+
+	if tokenResult == nil {
+		return nil
+	}
+
+	if isValidToken(tokenResult.IDToken) {
+		return tokenResult
+	}
+
+	if tokenResult.RefreshToken == "" {
+		return nil
+	}
+
+	return c.getRefreshToken(tokenResult.RefreshToken)
+}
+
+// isValidToken checks to see if the token is valid and has not expired
+func isValidToken(token string) bool {
+	p := jwt.Parser{}
+	claims := jwt.MapClaims{}
+
+	if _, _, err := p.ParseUnverified(token, claims); err != nil {
+		return false
+	}
+
+	return claims.VerifyExpiresAt(time.Now().Unix(), true)
 }

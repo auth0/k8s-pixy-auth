@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -33,13 +34,22 @@ func (i *inMemoryCachingProvider) GetTokens() (*TokenResult, error) {
 }
 
 type mockTokenProvider struct {
-	ReturnToken            *TokenResult
-	CalledWithRefreshToken string
+	ReturnRefreshToken      *TokenResult
+	ReturnAuthenticateToken *TokenResult
+	CalledWithRefreshToken  string
+	CalledAuthenticate      bool
+	ReturnRefreshError      error
+	ReturnAuthenticateError error
+}
+
+func (m *mockTokenProvider) Authenticate() (*TokenResult, error) {
+	m.CalledAuthenticate = true
+	return m.ReturnAuthenticateToken, m.ReturnAuthenticateError
 }
 
 func (m *mockTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult, error) {
 	m.CalledWithRefreshToken = refreshToken
-	return m.ReturnToken, nil
+	return m.ReturnRefreshToken, m.ReturnRefreshError
 }
 
 var _ = Describe("cachingTokenProvider", func() {
@@ -58,7 +68,7 @@ var _ = Describe("cachingTokenProvider", func() {
 
 	It("returns an id token from the cache", func() {
 		inMemCache.ReturnToken = &TokenResult{
-			IDToken: genValidTokenWithExp(time.Now()),
+			IDToken: genValidTokenWithExp(time.Now().Add(time.Minute * 2)),
 		}
 
 		idToken := ctp.GetIDToken()
@@ -67,7 +77,7 @@ var _ = Describe("cachingTokenProvider", func() {
 	})
 
 	It("refreshes token when id token is invalid", func() {
-		idTokenProvider.ReturnToken = &TokenResult{
+		idTokenProvider.ReturnRefreshToken = &TokenResult{
 			IDToken: "testToken",
 		}
 		inMemCache.ReturnToken = &TokenResult{
@@ -77,15 +87,64 @@ var _ = Describe("cachingTokenProvider", func() {
 		idToken := ctp.GetIDToken()
 
 		Expect(idTokenProvider.CalledWithRefreshToken).To(Equal(inMemCache.ReturnToken.RefreshToken))
-		Expect(idToken).To(Equal(idTokenProvider.ReturnToken.IDToken))
+		Expect(idToken).To(Equal(idTokenProvider.ReturnRefreshToken.IDToken))
+	})
+
+	It("runs a full authentication if refresh returns an error", func() {
+		inMemCache.ReturnToken = &TokenResult{
+			RefreshToken: "refreshToken",
+		}
+		idTokenProvider.ReturnRefreshError = errors.New("someerror")
+		idTokenProvider.ReturnAuthenticateToken = &TokenResult{
+			IDToken: "testToken",
+		}
+
+		idToken := ctp.GetIDToken()
+
+		Expect(idTokenProvider.CalledAuthenticate).To(BeTrue())
+		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
+	})
+
+	It("refreshes token when id token is expired", func() {
+		inMemCache.ReturnToken = &TokenResult{
+			IDToken:      genValidTokenWithExp(time.Now().Add(time.Second * -50)),
+			RefreshToken: "refreshToken",
+		}
+		idTokenProvider.ReturnRefreshToken = &TokenResult{
+			IDToken: "testToken",
+		}
+
+		idToken := ctp.GetIDToken()
+
+		Expect(idTokenProvider.CalledWithRefreshToken).To(Equal(inMemCache.ReturnToken.RefreshToken))
+		Expect(idToken).To(Equal(idTokenProvider.ReturnRefreshToken.IDToken))
+	})
+
+	It("when nothing is in the cache", func() {
+		inMemCache.ReturnToken = nil
+		idTokenProvider.ReturnAuthenticateToken = &TokenResult{
+			IDToken: "testToken",
+		}
+
+		idToken := ctp.GetIDToken()
+
+		Expect(idTokenProvider.CalledAuthenticate).To(BeTrue())
+		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
+	})
+
+	It("authenticates when refresh and id token are empty", func() {
+		inMemCache.ReturnToken = &TokenResult{}
+		idTokenProvider.ReturnAuthenticateToken = &TokenResult{
+			IDToken: "testToken",
+		}
+
+		idToken := ctp.GetIDToken()
+
+		Expect(idTokenProvider.CalledAuthenticate).To(BeTrue())
+		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
 	})
 
 	// when the tokenResult is nil
-
-	// when the IDToken is not a valid JWT
-
-	// It("refreshes token when id token is expired", func() {
-	// })
 
 	// It("caches new id token after refreshing it", func() {
 	// })
