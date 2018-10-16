@@ -48,9 +48,15 @@ type RefreshTokenRequest struct {
 
 type AuthTransport interface {
 	Post(url string, body interface{}) (*http.Response, error)
+	// TODO: Move into a generic httpClient interface?
+	Do(request *http.Request) (*http.Response, error)
 }
 
 type HttpClientTransport struct{}
+
+func (t *HttpClientTransport) Do(request *http.Request) (*http.Response, error) {
+	return nil, nil
+}
 
 func (t *HttpClientTransport) Post(url string, body interface{}) (*http.Response, error) {
 	b := new(bytes.Buffer)
@@ -70,7 +76,7 @@ func NewTokenRetriever(authEndpoint string, authTransport AuthTransport) *TokenR
 	}
 }
 
-func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
+func (ce *TokenRetriever) newExchangeCodeRequest(req AuthCodeExchangeRequest) (*http.Request, error) {
 	body := AuthTokenRequest{
 		GrantType:    "authorization_code",
 		ClientID:     req.ClientID,
@@ -79,23 +85,45 @@ func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResul
 		RedirectURI:  req.RedirectURI,
 	}
 
-	resp, err := ce.transport.Post(
-		fmt.Sprintf("%s/oauth/token", ce.authEndpoint),
-		body)
+	bodyReader := new(bytes.Buffer)
+	json.NewEncoder(bodyReader).Encode(body)
 
+	request, err := http.NewRequest("POST",
+		fmt.Sprintf("%s/oauth/token", ce.authEndpoint),
+		bodyReader,
+	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
+	request.Header.Add("Content-Type", "application/json")
+
+	return request, nil
+}
+
+func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
+	request, err := ce.newExchangeCodeRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := ce.transport.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return ce.handleExchangeCodeResponse(response)
+}
+
+func (ce *TokenRetriever) handleExchangeCodeResponse(resp *http.Response) (*TokenResult, error) {
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		//TODO: should return error from this function instead.
-		panic("A non-success status code was receveived")
+		return nil, fmt.Errorf("A non-success status code was receveived: %d", resp.StatusCode)
 	}
 
 	defer resp.Body.Close()
 
 	atr := AuthTokenResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&atr)
+	err := json.NewDecoder(resp.Body).Decode(&atr)
 	if err != nil {
 		return nil, err
 	}

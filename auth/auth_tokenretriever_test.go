@@ -1,4 +1,4 @@
-package auth_test
+package auth
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	. "github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -24,55 +23,83 @@ func (t *mockHttpTransport) Post(url string, body interface{}) (*http.Response, 
 	return t.Response, nil
 }
 
+func (t *mockHttpTransport) Do(request *http.Request) (*http.Response, error) {
+	return nil, nil
+}
+
 var _ = Describe("CodetokenExchanger", func() {
-	Describe("ExchangeCode", func() {
-		req := AuthCodeExchangeRequest{
-			ClientID:     "clientID",
-			CodeVerifier: "Verifier",
-			Code:         "code",
-			RedirectURI:  "https://redirect",
-		}
-
-		It("posts correct request", func() {
-			mockTransport := &mockHttpTransport{
-				Response: buildResponse(200, nil),
+	Describe("newExchangeCodeRequest", func() {
+		It("creates the request", func() {
+			tokenRetriever := TokenRetriever{
+				authEndpoint: "https://issuer",
+			}
+			exchangeRequest := AuthCodeExchangeRequest{
+				ClientID:     "clientID",
+				CodeVerifier: "Verifier",
+				Code:         "code",
+				RedirectURI:  "https://redirect",
 			}
 
-			retriever := NewTokenRetriever("https://issuer", mockTransport)
+			result, err := tokenRetriever.newExchangeCodeRequest(exchangeRequest)
 
-			retriever.ExchangeCode(req)
-
-			Expect(mockTransport.PostedUrl).To(Equal("https://issuer/oauth/token"))
-			Expect(mockTransport.PostedRequest).To(Equal(AuthTokenRequest{
-				GrantType:    "authorization_code",
-				Code:         req.Code,
-				ClientID:     req.ClientID,
-				CodeVerifier: req.CodeVerifier,
-				RedirectURI:  req.RedirectURI,
-			}))
-		})
-
-		It("returns tokens from response", func() {
-			mockTransport := &mockHttpTransport{
-				Response: buildResponse(200, &AuthTokenResponse{
-					ExpiresIn:    1000,
-					IDToken:      "id_token",
-					RefreshToken: "refresh_token",
-				}),
-			}
-
-			retriever := NewTokenRetriever("https://issuer", mockTransport)
-
-			response, err := retriever.ExchangeCode(req)
+			var tokenRequest AuthTokenRequest
+			json.NewDecoder(result.Body).Decode(&tokenRequest)
 
 			Expect(err).To(BeNil())
-			Expect(response).To(Equal(&TokenResult{
-				IDToken:      "id_token",
-				RefreshToken: "refresh_token",
-				ExpiresIn:    1000,
+			Expect(tokenRequest).To(Equal(AuthTokenRequest{
+				GrantType:    "authorization_code",
+				ClientID:     "clientID",
+				CodeVerifier: "Verifier",
+				Code:         "code",
+				RedirectURI:  "https://redirect",
+			}))
+			Expect(result.URL.String()).To(Equal("https://issuer/oauth/token"))
+		})
+
+		It("returns an error when the URI is invalid", func() {
+			tokenRetriever := TokenRetriever{
+				authEndpoint: "lol:/\\foo",
+			}
+
+			result, err := tokenRetriever.newExchangeCodeRequest(AuthCodeExchangeRequest{})
+
+			Expect(result).To(BeNil())
+			Expect(err.Error()).To(Equal("Something"))
+		})
+	})
+
+	Describe("handleExhcangeCodeResponse", func() {
+		It("handles the response", func() {
+			tokenRetriever := TokenRetriever{}
+			response := buildResponse(200, AuthTokenResponse{
+				ExpiresIn:    1,
+				IDToken:      "myIdToken",
+				RefreshToken: "myRefreshToken",
+			})
+
+			result, err := tokenRetriever.handleExchangeCodeResponse(response)
+
+			Expect(err).To(BeNil())
+			Expect(result).To(Equal(&TokenResult{
+				ExpiresIn:    1,
+				IDToken:      "myIdToken",
+				RefreshToken: "myRefreshToken",
 			}))
 		})
-		// It("handles request errors")
+
+		It("returns error when status code is not successful", func() {
+			tokenRetriever := TokenRetriever{}
+			response := buildResponse(500, nil)
+
+			result, err := tokenRetriever.handleExchangeCodeResponse(response)
+
+			Expect(result).To(BeNil())
+			Expect(err.Error()).To(Equal("A non-success status code was receveived: 500"))
+		})
+
+		It("returns error when deserialization fails", func() {
+			GinkgoT().Fail()
+		})
 	})
 
 	Describe("ExchangeRefreshToken", func() {
