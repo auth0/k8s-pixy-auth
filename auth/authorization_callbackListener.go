@@ -21,17 +21,13 @@ type CallbackService struct {
 	httpServer HTTPServer
 }
 
-// TODO: nothing makes this a localhost specifc HTTP server unless it actual
-// sets up the server addr to have `localhost:` at the beginning. We should
-// either change the name of this or change how it sets the addr
-
-// localhostHTTPServer is an implementation of HTTPServer for localhost
-type localhostHTTPServer struct {
+// callbackServer is an implementation of HTTPServer
+type callbackServer struct {
 	server *http.Server
 }
 
 // Start starts the HTTP server
-func (s *localhostHTTPServer) Start(addr string) {
+func (s *callbackServer) Start(addr string) {
 	s.server = &http.Server{
 		Addr: addr,
 	}
@@ -43,23 +39,23 @@ func (s *localhostHTTPServer) Start(addr string) {
 	}()
 }
 
-// Shutdown gracefully shutsdown the HTTP server
-func (s *localhostHTTPServer) Shutdown() {
+// Shutdown gracefully shuts down the HTTP server
+func (s *callbackServer) Shutdown() {
 	if err := s.server.Shutdown(context.Background()); err != nil {
 		log.Printf("HTTP server Shutdown error: %v", err)
 	}
 }
 
-// NewLocalhostCallbackListener creates a new CallbackService with a localhostHTTPServer
+// NewLocalhostCallbackListener creates a new CallbackService with a callbackServer
 func NewLocalhostCallbackListener(port int) *CallbackService {
-	return NewCallbackListener(port, &localhostHTTPServer{})
+	return NewCallbackListener(fmt.Sprintf("localhost:%d", port), &callbackServer{})
 }
 
 // NewCallbackListener creates a new CallbackService that uses the passed in
-// httpServer to listen on the passed in port
-func NewCallbackListener(port int, httpServer HTTPServer) *CallbackService {
+// httpServer to listen on the passed in addr
+func NewCallbackListener(addr string, httpServer HTTPServer) *CallbackService {
 	return &CallbackService{
-		fmt.Sprintf("localhost:%d", port),
+		addr,
 		httpServer,
 	}
 }

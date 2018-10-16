@@ -32,7 +32,7 @@ var _ = Describe("AuthCallbackService", func() {
 		}
 	})
 	It("starts the server", func() {
-		server := NewCallbackListener(1234, mockHTTP)
+		server := NewCallbackListener("testing:1234", mockHTTP)
 
 		resp := make(chan CallbackResponse)
 		defer close(resp)
@@ -43,7 +43,7 @@ var _ = Describe("AuthCallbackService", func() {
 	})
 
 	It("returns the code after callback", func() {
-		server := NewCallbackListener(1234, mockHTTP)
+		server := NewCallbackListener("testing:1234", mockHTTP)
 
 		resp := make(chan CallbackResponse)
 		defer close(resp)
@@ -56,15 +56,15 @@ var _ = Describe("AuthCallbackService", func() {
 	})
 
 	It("returns the correct callback url for the listener", func() {
-		server := NewCallbackListener(1234, mockHTTP)
+		server := NewCallbackListener("testing:1234", mockHTTP)
 
 		callbackURL := server.GetCallbackURL()
 
-		Expect(callbackURL).To(Equal("http://localhost:1234/callback"))
+		Expect(callbackURL).To(Equal("http://testing:1234/callback"))
 	})
 
 	It("returns an error if error is in the callback url", func() {
-		server := NewCallbackListener(1234, mockHTTP)
+		server := NewCallbackListener("testing:1234", mockHTTP)
 
 		resp := make(chan CallbackResponse)
 		defer close(resp)
@@ -77,7 +77,7 @@ var _ = Describe("AuthCallbackService", func() {
 	})
 
 	It("returns an error if no error or code is in the callback url", func() {
-		server := NewCallbackListener(1234, mockHTTP)
+		server := NewCallbackListener("testing:1234", mockHTTP)
 
 		resp := make(chan CallbackResponse)
 		defer close(resp)
@@ -87,6 +87,12 @@ var _ = Describe("AuthCallbackService", func() {
 		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("callback completed with no error or code")}))
+	})
+
+	It("sets up the callback server to listen on localhost", func() {
+		l := NewLocalhostCallbackListener(1573)
+
+		Expect(l.addr).To(Equal("localhost:1573"))
 	})
 
 	// It("shuts down after wait time")
