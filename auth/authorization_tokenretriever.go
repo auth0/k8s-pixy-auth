@@ -14,10 +14,10 @@ type TokenRetriever struct {
 	transport HTTPAuthTransport
 }
 
-// AuthTokenResponse is the HTTP response when asking for a new token. Note
-// that not all fields will contain data based on what kind of request was
+// AuthorizationTokenResponse is the HTTP response when asking for a new token.
+// Note that not all fields will contain data based on what kind of request was
 // sent
-type AuthTokenResponse struct {
+type AuthorizationTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	IDToken      string `json:"id_token"`
@@ -25,9 +25,9 @@ type AuthTokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-// AuthCodeExchangeRequest is used to request the exchange of an authorization
-// code for a token
-type AuthCodeExchangeRequest struct {
+// AuthorizationCodeExchangeRequest is used to request the exchange of an
+// authorization code for a token
+type AuthorizationCodeExchangeRequest struct {
 	ClientID     string
 	CodeVerifier string
 	Code         string
@@ -41,9 +41,9 @@ type RefreshTokenExchangeRequest struct {
 	RefreshToken string
 }
 
-// AuthTokenRequest is the HTTP request used to exchange an authorization code
-// for a token
-type AuthTokenRequest struct {
+// AuthorizationTokenRequest is the HTTP request used to exchange an
+// authorization code for a token
+type AuthorizationTokenRequest struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	CodeVerifier string `json:"code_verifier"`
@@ -59,7 +59,7 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// AuthTransport abstracts how an HTTP exchange request is sent and received
+// HTTPAuthTransport abstracts how an HTTP exchange request is sent and received
 type HTTPAuthTransport interface {
 	Do(request *http.Request) (*http.Response, error)
 }
@@ -75,8 +75,8 @@ func NewTokenRetriever(baseURL string, authTransport HTTPAuthTransport) *TokenRe
 
 // newExchangeCodeRequest builds a new AuthTokenRequest wrapped in an
 // http.Request
-func (ce *TokenRetriever) newExchangeCodeRequest(req AuthCodeExchangeRequest) (*http.Request, error) {
-	body := AuthTokenRequest{
+func (ce *TokenRetriever) newExchangeCodeRequest(req AuthorizationCodeExchangeRequest) (*http.Request, error) {
+	body := AuthorizationTokenRequest{
 		GrantType:    "authorization_code",
 		ClientID:     req.ClientID,
 		CodeVerifier: req.CodeVerifier,
@@ -127,7 +127,7 @@ func (ce *TokenRetriever) newRefreshTokenRequest(req RefreshTokenExchangeRequest
 
 // ExchangeCode uses the AuthCodeExchangeRequest to exchange an authorization
 // code for tokens
-func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
+func (ce *TokenRetriever) ExchangeCode(req AuthorizationCodeExchangeRequest) (*TokenResult, error) {
 	request, err := ce.newExchangeCodeRequest(req)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (ce *TokenRetriever) handleAuthTokensResponse(resp *http.Response) (*TokenR
 
 	defer resp.Body.Close()
 
-	atr := AuthTokenResponse{}
+	atr := AuthorizationTokenResponse{}
 	err := json.NewDecoder(resp.Body).Decode(&atr)
 	if err != nil {
 		return nil, err

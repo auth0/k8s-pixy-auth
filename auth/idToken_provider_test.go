@@ -10,25 +10,25 @@ import (
 type MockCodeProvider struct {
 	Called              bool
 	CalledWithChallenge Challenge
-	AuthCodeResult      *AuthCodeResult
+	AuthCodeResult      *AuthorizationCodeResult
 	ReturnsError        error
 }
 
-func (cp *MockCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, error) {
+func (cp *MockCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
 	cp.Called = true
 	cp.CalledWithChallenge = challenge
 	return cp.AuthCodeResult, cp.ReturnsError
 }
 
 type MockTokenExchanger struct {
-	CalledWithRequest        *AuthCodeExchangeRequest
+	CalledWithRequest        *AuthorizationCodeExchangeRequest
 	Called                   bool
 	ReturnsTokens            *TokenResult
 	ReturnsError             error
 	RefreshCalledWithRequest *RefreshTokenExchangeRequest
 }
 
-func (te *MockTokenExchanger) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
+func (te *MockTokenExchanger) ExchangeCode(req AuthorizationCodeExchangeRequest) (*TokenResult, error) {
 	te.CalledWithRequest = &req
 	return te.ReturnsTokens, te.ReturnsError
 }
@@ -60,7 +60,7 @@ var _ = Describe("userIdTokenProvider", func() {
 
 		BeforeEach(func() {
 			mockCodeProvider = &MockCodeProvider{
-				AuthCodeResult: &AuthCodeResult{
+				AuthCodeResult: &AuthorizationCodeResult{
 					Code:        "1234",
 					RedirectURI: "http://callback",
 				},
@@ -83,7 +83,7 @@ var _ = Describe("userIdTokenProvider", func() {
 			_, _ = provider.Authenticate()
 			Expect(mockCodeProvider.Called).To(BeTrue())
 			Expect(mockCodeProvider.CalledWithChallenge).To(Equal(challengeResult))
-			Expect(mockTokenExchanger.CalledWithRequest).To(Equal(&AuthCodeExchangeRequest{
+			Expect(mockTokenExchanger.CalledWithRequest).To(Equal(&AuthorizationCodeExchangeRequest{
 				ClientID:     issuer.ClientID,
 				CodeVerifier: challengeResult.Verifier,
 				Code:         "1234",

@@ -16,7 +16,7 @@ var _ = Describe("CodetokenExchanger", func() {
 			tokenRetriever := TokenRetriever{
 				baseURL: "https://issuer",
 			}
-			exchangeRequest := AuthCodeExchangeRequest{
+			exchangeRequest := AuthorizationCodeExchangeRequest{
 				ClientID:     "clientID",
 				CodeVerifier: "Verifier",
 				Code:         "code",
@@ -25,11 +25,11 @@ var _ = Describe("CodetokenExchanger", func() {
 
 			result, err := tokenRetriever.newExchangeCodeRequest(exchangeRequest)
 
-			var tokenRequest AuthTokenRequest
+			var tokenRequest AuthorizationTokenRequest
 			json.NewDecoder(result.Body).Decode(&tokenRequest)
 
 			Expect(err).To(BeNil())
-			Expect(tokenRequest).To(Equal(AuthTokenRequest{
+			Expect(tokenRequest).To(Equal(AuthorizationTokenRequest{
 				GrantType:    "authorization_code",
 				ClientID:     "clientID",
 				CodeVerifier: "Verifier",
@@ -44,7 +44,7 @@ var _ = Describe("CodetokenExchanger", func() {
 				baseURL: "://issuer",
 			}
 
-			result, err := tokenRetriever.newExchangeCodeRequest(AuthCodeExchangeRequest{})
+			result, err := tokenRetriever.newExchangeCodeRequest(AuthorizationCodeExchangeRequest{})
 
 			Expect(result).To(BeNil())
 			Expect(err.Error()).To(Equal("parse ://issuer/oauth/token: missing protocol scheme"))
@@ -54,7 +54,7 @@ var _ = Describe("CodetokenExchanger", func() {
 	Describe("handleExhcangeCodeResponse", func() {
 		It("handles the response", func() {
 			tokenRetriever := TokenRetriever{}
-			response := buildResponse(200, AuthTokenResponse{
+			response := buildResponse(200, AuthorizationTokenResponse{
 				ExpiresIn:    1,
 				IDToken:      "myIdToken",
 				RefreshToken: "myRefreshToken",
@@ -86,7 +86,7 @@ var _ = Describe("CodetokenExchanger", func() {
 
 			result, err := tokenRetriever.handleAuthTokensResponse(response)
 			Expect(result).To(BeNil())
-			Expect(err.Error()).To(Equal("json: cannot unmarshal string into Go value of type auth.AuthTokenResponse"))
+			Expect(err.Error()).To(Equal("json: cannot unmarshal string into Go value of type auth.AuthorizationTokenResponse"))
 		})
 	})
 

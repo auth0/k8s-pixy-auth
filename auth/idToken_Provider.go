@@ -9,19 +9,19 @@ import (
 // IDTokenProvider takes care of the mechanics needed for getting an ID Token
 type IDTokenProvider struct {
 	issuerData   Issuer
-	codeProvider AuthCodeProvider
-	exchanger    AuthTokenExchanger
+	codeProvider AuthorizationCodeProvider
+	exchanger    AuthorizationTokenExchanger
 	challenger   Challenger
 }
 
-// AuthCodeProvider abstracts getting an authorization code
-type AuthCodeProvider interface {
-	GetCode(challenge Challenge) (*AuthCodeResult, error)
+// AuthorizationCodeProvider abstracts getting an authorization code
+type AuthorizationCodeProvider interface {
+	GetCode(challenge Challenge) (*AuthorizationCodeResult, error)
 }
 
-// AuthTokenExchanger abstracts exchanging for tokens
-type AuthTokenExchanger interface {
-	ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error)
+// AuthorizationTokenExchanger abstracts exchanging for tokens
+type AuthorizationTokenExchanger interface {
+	ExchangeCode(req AuthorizationCodeExchangeRequest) (*TokenResult, error)
 	ExchangeRefreshToken(req RefreshTokenExchangeRequest) (*TokenResult, error)
 }
 
@@ -42,8 +42,8 @@ type Issuer struct {
 // NewIDTokenProvider allows for the easy setup IDTokenProvider
 func NewIDTokenProvider(
 	issuerData Issuer,
-	codeProvider AuthCodeProvider,
-	exchanger AuthTokenExchanger,
+	codeProvider AuthorizationCodeProvider,
+	exchanger AuthorizationTokenExchanger,
 	challenger Challenger) *IDTokenProvider {
 	return &IDTokenProvider{
 		issuerData:   issuerData,
@@ -82,7 +82,7 @@ func (p *IDTokenProvider) Authenticate() (*TokenResult, error) {
 		return nil, err
 	}
 
-	exchangeRequest := AuthCodeExchangeRequest{
+	exchangeRequest := AuthorizationCodeExchangeRequest{
 		Code:         codeResult.Code,
 		CodeVerifier: challenge.Verifier,
 		ClientID:     p.issuerData.ClientID,

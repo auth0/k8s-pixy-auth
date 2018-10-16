@@ -6,13 +6,13 @@ import "fmt"
 // authorization code
 type LocalhostCodeProvider struct {
 	Issuer
-	listener     AuthCallbackListener
+	listener     AuthorizationCallbackListener
 	osInteractor OSInteractor
 }
 
-// AuthCodeResult holds the needed code and redirect URI needed to exchange a
+// AuthorizationCodeResult holds the needed code and redirect URI needed to exchange a
 // authorization code for tokens
-type AuthCodeResult struct {
+type AuthorizationCodeResult struct {
 	Code        string
 	RedirectURI string
 }
@@ -24,8 +24,8 @@ type CallbackResponse struct {
 	Error error
 }
 
-// AuthCallbackListener abstracts listening for the authorization callback
-type AuthCallbackListener interface {
+// AuthorizationCallbackListener abstracts listening for the authorization callback
+type AuthorizationCallbackListener interface {
 	GetCallbackURL() string
 	AwaitResponse(response chan CallbackResponse)
 	Close()
@@ -36,10 +36,10 @@ type OSInteractor interface {
 	OpenURL(url string) error
 }
 
-// NewALocalhostCodeProvider allows for the easy setup of LocalhostCodeProvider
+// NewLocalhostCodeProvider allows for the easy setup of LocalhostCodeProvider
 func NewLocalhostCodeProvider(
 	issuer Issuer,
-	callbackListener AuthCallbackListener,
+	callbackListener AuthorizationCallbackListener,
 	osInteractor OSInteractor) *LocalhostCodeProvider {
 	return &LocalhostCodeProvider{
 		issuer,
@@ -50,7 +50,7 @@ func NewLocalhostCodeProvider(
 
 // GetCode opens a URL to authenticate and authorize a user and then returns
 // the authrization code that is sent to the callback
-func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, error) {
+func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
 	go cp.listener.AwaitResponse(codeReceiverCh)
@@ -74,7 +74,7 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthCodeResult, 
 	}
 
 	cp.listener.Close()
-	return &AuthCodeResult{
+	return &AuthorizationCodeResult{
 		Code:        callbackResult.Code,
 		RedirectURI: cp.listener.GetCallbackURL(),
 	}, nil
