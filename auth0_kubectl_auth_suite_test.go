@@ -1,10 +1,10 @@
-package main_test
+package main
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
 func TestAuth0KubectlAuth(t *testing.T) {

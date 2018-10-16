@@ -38,7 +38,7 @@ func (te *MockTokenExchanger) ExchangeRefreshToken(req RefreshTokenExchangeReque
 	return te.ReturnsTokens, te.ReturnsError
 }
 
-var _ = Describe("userIdTokenProvider", func() {
+var _ = Describe("IDTokenProvider", func() {
 	issuer := Issuer{
 		IssuerEndpoint: "http://issuer",
 		ClientID:       "test_clientID",

@@ -24,7 +24,7 @@ func genValidTokenWithExp(exp time.Time) string {
 	return ss
 }
 
-var _ = Describe("auth", func() {
+var _ = Describe("main", func() {
 	Describe("isTokenExpired", func() {
 		It("returns true when it's expired", func() {
 			token := genValidTokenWithExp(time.Now().Truncate(time.Minute * 1))
