@@ -8,8 +8,8 @@ import (
 )
 
 type TokenRetriever struct {
-	authEndpoint string
-	transport    AuthTransport
+	baseURL   string
+	transport AuthTransport
 }
 
 type AuthTokenResponse struct {
@@ -69,10 +69,10 @@ func (t *HttpClientTransport) Post(url string, body interface{}) (*http.Response
 	//TODO: Should convert response back to json for client for symmetry purposes
 }
 
-func NewTokenRetriever(authEndpoint string, authTransport AuthTransport) *TokenRetriever {
+func NewTokenRetriever(baseURL string, authTransport AuthTransport) *TokenRetriever {
 	return &TokenRetriever{
-		authEndpoint: authEndpoint,
-		transport:    authTransport,
+		baseURL:   baseURL,
+		transport: authTransport,
 	}
 }
 
@@ -89,7 +89,7 @@ func (ce *TokenRetriever) newExchangeCodeRequest(req AuthCodeExchangeRequest) (*
 	json.NewEncoder(bodyReader).Encode(body)
 
 	request, err := http.NewRequest("POST",
-		fmt.Sprintf("%s/oauth/token", ce.authEndpoint),
+		fmt.Sprintf("%s/oauth/token", ce.baseURL),
 		bodyReader,
 	)
 	if err != nil {
@@ -143,7 +143,7 @@ func (ce *TokenRetriever) ExchangeRefreshToken(req RefreshTokenExchangeRequest) 
 	}
 
 	resp, _ := ce.transport.Post(
-		fmt.Sprintf("%s/oauth/token", ce.authEndpoint),
+		fmt.Sprintf("%s/oauth/token", ce.baseURL),
 		body)
 	defer resp.Body.Close()
 

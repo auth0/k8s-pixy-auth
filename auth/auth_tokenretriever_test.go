@@ -31,7 +31,7 @@ var _ = Describe("CodetokenExchanger", func() {
 	Describe("newExchangeCodeRequest", func() {
 		It("creates the request", func() {
 			tokenRetriever := TokenRetriever{
-				authEndpoint: "https://issuer",
+				baseURL: "https://issuer",
 			}
 			exchangeRequest := AuthCodeExchangeRequest{
 				ClientID:     "clientID",
@@ -56,15 +56,15 @@ var _ = Describe("CodetokenExchanger", func() {
 			Expect(result.URL.String()).To(Equal("https://issuer/oauth/token"))
 		})
 
-		It("returns an error when the URI is invalid", func() {
+		It("returns an error when NewRequest returns an error", func() {
 			tokenRetriever := TokenRetriever{
-				authEndpoint: "lol:/\\foo",
+				baseURL: "://issuer",
 			}
 
 			result, err := tokenRetriever.newExchangeCodeRequest(AuthCodeExchangeRequest{})
 
 			Expect(result).To(BeNil())
-			Expect(err.Error()).To(Equal("Something"))
+			Expect(err.Error()).To(Equal("parse ://issuer/oauth/token: missing protocol scheme"))
 		})
 	})
 
@@ -98,7 +98,12 @@ var _ = Describe("CodetokenExchanger", func() {
 		})
 
 		It("returns error when deserialization fails", func() {
-			GinkgoT().Fail()
+			tokenRetriever := TokenRetriever{}
+			response := buildResponse(200, "")
+
+			result, err := tokenRetriever.handleExchangeCodeResponse(response)
+			Expect(result).To(BeNil())
+			Expect(err.Error()).To(Equal("json: cannot unmarshal string into Go value of type auth.AuthTokenResponse"))
 		})
 	})
 
