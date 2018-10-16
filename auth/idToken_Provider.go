@@ -1,6 +1,10 @@
 package auth
 
-import "github.com/auth0/auth0-kubectl-auth/os"
+import (
+	"net/http"
+
+	"github.com/auth0/auth0-kubectl-auth/os"
+)
 
 type IdTokenProvider struct {
 	issuerData   Issuer
@@ -52,7 +56,7 @@ func NewDefaultIdTokenProvider(issuerData Issuer) *IdTokenProvider {
 
 	tokenRetriever := NewTokenRetriever(
 		issuerData.IssuerEndpoint,
-		&HttpClientTransport{})
+		&http.Client{})
 
 	return NewIdTokenProvider(
 		issuerData,

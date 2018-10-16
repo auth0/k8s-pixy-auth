@@ -47,26 +47,7 @@ type RefreshTokenRequest struct {
 }
 
 type AuthTransport interface {
-	Post(url string, body interface{}) (*http.Response, error)
-	// TODO: Move into a generic httpClient interface?
 	Do(request *http.Request) (*http.Response, error)
-}
-
-type HttpClientTransport struct{}
-
-func (t *HttpClientTransport) Do(request *http.Request) (*http.Response, error) {
-	return nil, nil
-}
-
-func (t *HttpClientTransport) Post(url string, body interface{}) (*http.Response, error) {
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(body)
-
-	resp, err := http.Post(url, "application/json", b)
-
-	return resp, err
-
-	//TODO: Should convert response back to json for client for symmetry purposes
 }
 
 func NewTokenRetriever(baseURL string, authTransport AuthTransport) *TokenRetriever {

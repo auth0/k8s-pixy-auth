@@ -10,23 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type mockHttpTransport struct {
-	PostedUrl     string
-	PostedRequest interface{}
-	Response      *http.Response
-}
-
-func (t *mockHttpTransport) Post(url string, body interface{}) (*http.Response, error) {
-	t.PostedUrl = url
-	t.PostedRequest = body
-
-	return t.Response, nil
-}
-
-func (t *mockHttpTransport) Do(request *http.Request) (*http.Response, error) {
-	return nil, nil
-}
-
 var _ = Describe("CodetokenExchanger", func() {
 	Describe("newExchangeCodeRequest", func() {
 		It("creates the request", func() {
