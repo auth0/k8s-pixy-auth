@@ -107,47 +107,39 @@ var _ = Describe("CodetokenExchanger", func() {
 		})
 	})
 
-	Describe("ExchangeRefreshToken", func() {
-		req := RefreshTokenExchangeRequest{
-			ClientID:     "IAMCLIENT",
-			RefreshToken: "IAMREFRESHTOKEN",
-		}
-
-		It("posts correct request", func() {
-			mockTransport := &mockHttpTransport{
-				Response: buildResponse(200, nil),
+	Describe("newRefreshTokenRequest", func() {
+		It("creates the request", func() {
+			tokenRetriever := TokenRetriever{
+				baseURL: "https://issuer",
+			}
+			exchangeRequest := RefreshTokenExchangeRequest{
+				ClientID:     "clientID",
+				RefreshToken: "refreshToken",
 			}
 
-			retriever := NewTokenRetriever("https://issuer", mockTransport)
+			result, err := tokenRetriever.newRefreshTokenRequest(exchangeRequest)
 
-			retriever.ExchangeRefreshToken(req)
-
-			Expect(mockTransport.PostedUrl).To(Equal("https://issuer/oauth/token"))
-			Expect(mockTransport.PostedRequest).To(Equal(RefreshTokenRequest{
-				GrantType:    "refresh_token",
-				ClientID:     req.ClientID,
-				RefreshToken: req.RefreshToken,
-			}))
-		})
-
-		It("returns tokens from response", func() {
-			mockTransport := &mockHttpTransport{
-				Response: buildResponse(200, &AuthTokenResponse{
-					ExpiresIn: 1000,
-					IDToken:   "id_token",
-				}),
-			}
-
-			retriever := NewTokenRetriever("https://issuer", mockTransport)
-
-			response, err := retriever.ExchangeRefreshToken(req)
+			var tokenRequest RefreshTokenRequest
+			json.NewDecoder(result.Body).Decode(&tokenRequest)
 
 			Expect(err).To(BeNil())
-			Expect(response).To(Equal(&TokenResult{
-				IDToken:      "id_token",
-				RefreshToken: req.RefreshToken,
-				ExpiresIn:    1000,
+			Expect(tokenRequest).To(Equal(RefreshTokenRequest{
+				GrantType:    "refresh_token",
+				ClientID:     "clientID",
+				RefreshToken: "refreshToken",
 			}))
+			Expect(result.URL.String()).To(Equal("https://issuer/oauth/token"))
+		})
+
+		It("returns an error when NewRequest returns an error", func() {
+			tokenRetriever := TokenRetriever{
+				baseURL: "://issuer",
+			}
+
+			result, err := tokenRetriever.newRefreshTokenRequest(RefreshTokenExchangeRequest{})
+
+			Expect(result).To(BeNil())
+			Expect(err.Error()).To(Equal("parse ://issuer/oauth/token: missing protocol scheme"))
 		})
 	})
 })

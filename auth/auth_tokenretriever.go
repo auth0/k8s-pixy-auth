@@ -101,6 +101,29 @@ func (ce *TokenRetriever) newExchangeCodeRequest(req AuthCodeExchangeRequest) (*
 	return request, nil
 }
 
+func (ce *TokenRetriever) newRefreshTokenRequest(req RefreshTokenExchangeRequest) (*http.Request, error) {
+	body := RefreshTokenRequest{
+		GrantType:    "refresh_token",
+		ClientID:     req.ClientID,
+		RefreshToken: req.RefreshToken,
+	}
+
+	bodyReader := new(bytes.Buffer)
+	json.NewEncoder(bodyReader).Encode(body)
+
+	request, err := http.NewRequest("POST",
+		fmt.Sprintf("%s/oauth/token", ce.baseURL),
+		bodyReader,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("Content-Type", "application/json")
+
+	return request, nil
+}
+
 func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
 	request, err := ce.newExchangeCodeRequest(req)
 	if err != nil {
@@ -136,26 +159,15 @@ func (ce *TokenRetriever) handleExchangeCodeResponse(resp *http.Response) (*Toke
 }
 
 func (ce *TokenRetriever) ExchangeRefreshToken(req RefreshTokenExchangeRequest) (*TokenResult, error) {
-	body := RefreshTokenRequest{
-		GrantType:    "refresh_token",
-		ClientID:     req.ClientID,
-		RefreshToken: req.RefreshToken,
-	}
-
-	resp, _ := ce.transport.Post(
-		fmt.Sprintf("%s/oauth/token", ce.baseURL),
-		body)
-	defer resp.Body.Close()
-
-	atr := AuthTokenResponse{}
-	err := json.NewDecoder(resp.Body).Decode(&atr)
+	request, err := ce.newRefreshTokenRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &TokenResult{
-		IDToken:      atr.IDToken,
-		RefreshToken: req.RefreshToken,
-		ExpiresIn:    atr.ExpiresIn,
-	}, nil
+	response, err := ce.transport.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return ce.handleExchangeCodeResponse(response)
 }
