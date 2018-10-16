@@ -1,10 +1,9 @@
-package auth_test
+package auth
 
 import (
 	"errors"
 	"net/http/httptest"
 
-	. "github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

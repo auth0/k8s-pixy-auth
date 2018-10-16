@@ -7,11 +7,16 @@ import (
 	"net/http"
 )
 
+// TokenRetriever implements AuthTokenExchanger in order to facilitate getting
+// Tokens
 type TokenRetriever struct {
 	baseURL   string
-	transport AuthTransport
+	transport HTTPAuthTransport
 }
 
+// AuthTokenResponse is the HTTP response when asking for a new token. Note
+// that not all fields will contain data based on what kind of request was
+// sent
 type AuthTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
@@ -20,6 +25,8 @@ type AuthTokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
+// AuthCodeExchangeRequest is used to request the exchange of an authorization
+// code for a token
 type AuthCodeExchangeRequest struct {
 	ClientID     string
 	CodeVerifier string
@@ -27,11 +34,15 @@ type AuthCodeExchangeRequest struct {
 	RedirectURI  string
 }
 
+// RefreshTokenExchangeRequest is used to request the exchange of a refresh
+// token for a refreshed token
 type RefreshTokenExchangeRequest struct {
 	ClientID     string
 	RefreshToken string
 }
 
+// AuthTokenRequest is the HTTP request used to exchange an authorization code
+// for a token
 type AuthTokenRequest struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
@@ -40,23 +51,30 @@ type AuthTokenRequest struct {
 	RedirectURI  string `json:"redirect_uri"`
 }
 
+// RefreshTokenRequest is the HTTP request used to exchange a refresh token for
+// a refreshed token
 type RefreshTokenRequest struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	RefreshToken string `json:"refresh_token"`
 }
 
-type AuthTransport interface {
+// AuthTransport abstracts how an HTTP exchange request is sent and received
+type HTTPAuthTransport interface {
 	Do(request *http.Request) (*http.Response, error)
 }
 
-func NewTokenRetriever(baseURL string, authTransport AuthTransport) *TokenRetriever {
+// NewTokenRetriever allows a TokenRetriever the internal of a new
+// TokenTreriever to be easily set up
+func NewTokenRetriever(baseURL string, authTransport HTTPAuthTransport) *TokenRetriever {
 	return &TokenRetriever{
 		baseURL:   baseURL,
 		transport: authTransport,
 	}
 }
 
+// newExchangeCodeRequest builds a new AuthTokenRequest wrapped in an
+// http.Request
 func (ce *TokenRetriever) newExchangeCodeRequest(req AuthCodeExchangeRequest) (*http.Request, error) {
 	body := AuthTokenRequest{
 		GrantType:    "authorization_code",
@@ -82,6 +100,8 @@ func (ce *TokenRetriever) newExchangeCodeRequest(req AuthCodeExchangeRequest) (*
 	return request, nil
 }
 
+// newRefreshTokenRequest builds a new RefreshTokenRequest wrapped in an
+// http.Request
 func (ce *TokenRetriever) newRefreshTokenRequest(req RefreshTokenExchangeRequest) (*http.Request, error) {
 	body := RefreshTokenRequest{
 		GrantType:    "refresh_token",
@@ -105,6 +125,8 @@ func (ce *TokenRetriever) newRefreshTokenRequest(req RefreshTokenExchangeRequest
 	return request, nil
 }
 
+// ExchangeCode uses the AuthCodeExchangeRequest to exchange an authorization
+// code for tokens
 func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResult, error) {
 	request, err := ce.newExchangeCodeRequest(req)
 	if err != nil {
@@ -116,10 +138,12 @@ func (ce *TokenRetriever) ExchangeCode(req AuthCodeExchangeRequest) (*TokenResul
 		return nil, err
 	}
 
-	return ce.handleExchangeCodeResponse(response)
+	return ce.handleAuthTokensResponse(response)
 }
 
-func (ce *TokenRetriever) handleExchangeCodeResponse(resp *http.Response) (*TokenResult, error) {
+// handleAuthTokensResponse takes care of checking an http.Response that has
+// auth tokens for errors and parsing the raw body to a TokenResult struct
+func (ce *TokenRetriever) handleAuthTokensResponse(resp *http.Response) (*TokenResult, error) {
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, fmt.Errorf("A non-success status code was receveived: %d", resp.StatusCode)
 	}
@@ -139,6 +163,8 @@ func (ce *TokenRetriever) handleExchangeCodeResponse(resp *http.Response) (*Toke
 	}, nil
 }
 
+// ExchangeRefreshToken uses the RefreshTokenExchangeRequest to exchange a
+// refresh token for refreshed tokens
 func (ce *TokenRetriever) ExchangeRefreshToken(req RefreshTokenExchangeRequest) (*TokenResult, error) {
 	request, err := ce.newRefreshTokenRequest(req)
 	if err != nil {
@@ -150,5 +176,5 @@ func (ce *TokenRetriever) ExchangeRefreshToken(req RefreshTokenExchangeRequest) 
 		return nil, err
 	}
 
-	return ce.handleExchangeCodeResponse(response)
+	return ce.handleAuthTokensResponse(response)
 }

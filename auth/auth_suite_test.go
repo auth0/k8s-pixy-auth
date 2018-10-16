@@ -1,10 +1,10 @@
-package auth_test
+package auth
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
 func TestAuth(t *testing.T) {

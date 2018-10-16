@@ -60,7 +60,7 @@ var _ = Describe("CodetokenExchanger", func() {
 				RefreshToken: "myRefreshToken",
 			})
 
-			result, err := tokenRetriever.handleExchangeCodeResponse(response)
+			result, err := tokenRetriever.handleAuthTokensResponse(response)
 
 			Expect(err).To(BeNil())
 			Expect(result).To(Equal(&TokenResult{
@@ -74,7 +74,7 @@ var _ = Describe("CodetokenExchanger", func() {
 			tokenRetriever := TokenRetriever{}
 			response := buildResponse(500, nil)
 
-			result, err := tokenRetriever.handleExchangeCodeResponse(response)
+			result, err := tokenRetriever.handleAuthTokensResponse(response)
 
 			Expect(result).To(BeNil())
 			Expect(err.Error()).To(Equal("A non-success status code was receveived: 500"))
@@ -84,7 +84,7 @@ var _ = Describe("CodetokenExchanger", func() {
 			tokenRetriever := TokenRetriever{}
 			response := buildResponse(200, "")
 
-			result, err := tokenRetriever.handleExchangeCodeResponse(response)
+			result, err := tokenRetriever.handleAuthTokensResponse(response)
 			Expect(result).To(BeNil())
 			Expect(err.Error()).To(Equal("json: cannot unmarshal string into Go value of type auth.AuthTokenResponse"))
 		})

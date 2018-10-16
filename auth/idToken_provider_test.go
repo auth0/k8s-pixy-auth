@@ -1,9 +1,8 @@
-package auth_test
+package auth
 
 import (
 	"errors"
 
-	. "github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -74,7 +73,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		})
 
 		It("invokes TokenExchanger with returned code", func() {
-			provider := NewIdTokenProvider(
+			provider := NewIDTokenProvider(
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -93,7 +92,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		})
 
 		It("returns TokensResult from TokenExchanger", func() {
-			provider := NewIdTokenProvider(
+			provider := NewIDTokenProvider(
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -108,7 +107,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		It("returns an error if code request errors", func() {
 			mockCodeProvider.ReturnsError = errors.New("someerror")
 
-			provider := NewIdTokenProvider(
+			provider := NewIDTokenProvider(
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -124,7 +123,7 @@ var _ = Describe("userIdTokenProvider", func() {
 			mockTokenExchanger.ReturnsError = errors.New("someerror")
 			mockTokenExchanger.ReturnsTokens = nil
 
-			provider := NewIdTokenProvider(
+			provider := NewIDTokenProvider(
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -141,7 +140,7 @@ var _ = Describe("userIdTokenProvider", func() {
 		mockTokenExchanger := &MockTokenExchanger{
 			ReturnsTokens: &TokenResult{},
 		}
-		provider := NewIdTokenProvider(
+		provider := NewIDTokenProvider(
 			issuer,
 			nil,
 			mockTokenExchanger,

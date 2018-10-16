@@ -6,14 +6,17 @@ import (
 	"encoding/base64"
 )
 
+// Challenge holds challenge and verification data needed for the PKCE flow
 type Challenge struct {
 	Code     string
 	Verifier string
 	Method   string
 }
 
+// Challenger is used to generate a new Challenge
 type Challenger func() Challenge
 
+// DefaultChallengeGenerator generates a default Challenge
 func DefaultChallengeGenerator() Challenge {
 	return generateChallenge(32)
 }
@@ -31,6 +34,7 @@ func generateRandomString(n int) string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
+// generateChallenge generates a new Challenge of a specific length
 func generateChallenge(length int) Challenge {
 	c := Challenge{}
 

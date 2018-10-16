@@ -1,10 +1,9 @@
-package auth_test
+package auth
 
 import (
 	"errors"
 	"net/url"
 
-	. "github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -73,7 +72,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("waits for a response from the callback", func(done Done) {
 		mockListener := newMockCallbackListener()
-		provider := NewAuthCodeProvider(
+		provider := NewLocalhostCodeProvider(
 			issuerData,
 			mockListener,
 			&mockInteractor{},
@@ -87,7 +86,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("closes the listener after receiving the code", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewAuthCodeProvider(
+		provider := NewLocalhostCodeProvider(
 			issuerData,
 			mockListener,
 			&mockInteractor{},
@@ -102,7 +101,7 @@ var _ = Describe("AuthCodeProvider", func() {
 	It("opens the URL with expected auth params", func() {
 		mockListener := newMockCallbackListener()
 		mockOSInteractor := &mockInteractor{}
-		provider := NewAuthCodeProvider(
+		provider := NewLocalhostCodeProvider(
 			issuerData,
 			mockListener,
 			mockOSInteractor,
@@ -131,7 +130,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("returns code provided by listener", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewAuthCodeProvider(
+		provider := NewLocalhostCodeProvider(
 			issuerData,
 			mockListener,
 			&mockInteractor{},
@@ -147,7 +146,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("raises errors if command execution fails", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewAuthCodeProvider(
+		provider := NewLocalhostCodeProvider(
 			issuerData,
 			mockListener,
 			&mockInteractor{
@@ -162,7 +161,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("raises error if listener returns error", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewAuthCodeProvider(
+		provider := NewLocalhostCodeProvider(
 			issuerData,
 			mockListener,
 			&mockInteractor{},
