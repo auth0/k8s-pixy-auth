@@ -76,7 +76,7 @@ var _ = Describe("cachingTokenProvider", func() {
 			IDToken: genValidTokenWithExp(time.Now().Add(time.Minute * 2)),
 		}
 
-		idToken := ctp.GetIDToken()
+		idToken, _ := ctp.GetIDToken()
 
 		Expect(idToken).To(Equal(inMemCache.ReturnToken.IDToken))
 	})
@@ -89,7 +89,7 @@ var _ = Describe("cachingTokenProvider", func() {
 			RefreshToken: "refreshToken",
 		}
 
-		idToken := ctp.GetIDToken()
+		idToken, _ := ctp.GetIDToken()
 
 		Expect(idTokenProvider.CalledWithRefreshToken).To(Equal(inMemCache.ReturnToken.RefreshToken))
 		Expect(idToken).To(Equal(idTokenProvider.ReturnRefreshToken.IDToken))
@@ -104,7 +104,7 @@ var _ = Describe("cachingTokenProvider", func() {
 			IDToken: "testToken",
 		}
 
-		idToken := ctp.GetIDToken()
+		idToken, _ := ctp.GetIDToken()
 
 		Expect(idTokenProvider.CalledAuthenticate).To(BeTrue())
 		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
@@ -119,7 +119,7 @@ var _ = Describe("cachingTokenProvider", func() {
 			IDToken: "testToken",
 		}
 
-		idToken := ctp.GetIDToken()
+		idToken, _ := ctp.GetIDToken()
 
 		Expect(idTokenProvider.CalledWithRefreshToken).To(Equal(inMemCache.ReturnToken.RefreshToken))
 		Expect(idToken).To(Equal(idTokenProvider.ReturnRefreshToken.IDToken))
@@ -131,7 +131,7 @@ var _ = Describe("cachingTokenProvider", func() {
 			IDToken: "testToken",
 		}
 
-		idToken := ctp.GetIDToken()
+		idToken, _ := ctp.GetIDToken()
 
 		Expect(idTokenProvider.CalledAuthenticate).To(BeTrue())
 		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
@@ -143,7 +143,7 @@ var _ = Describe("cachingTokenProvider", func() {
 			IDToken: "testToken",
 		}
 
-		idToken := ctp.GetIDToken()
+		idToken, _ := ctp.GetIDToken()
 
 		Expect(idTokenProvider.CalledAuthenticate).To(BeTrue())
 		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
@@ -177,5 +177,12 @@ var _ = Describe("cachingTokenProvider", func() {
 		}))
 	})
 
-	// propogates errors
+	It("passes along an error from authenticate", func() {
+		idTokenProvider.ReturnAuthenticateError = errors.New("someerror")
+
+		idToken, err := ctp.GetIDToken()
+
+		Expect(idToken).To(BeEmpty())
+		Expect(err.Error()).To(Equal("someerror"))
+	})
 })

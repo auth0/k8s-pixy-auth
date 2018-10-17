@@ -21,19 +21,24 @@ type cachingTokenProvider struct {
 	idTokenProvider tokenProvider
 }
 
-func (c *cachingTokenProvider) GetIDToken() string {
+func (c *cachingTokenProvider) GetIDToken() (string, error) {
 	tokenResult := c.refreshFromCache()
 
 	if tokenResult == nil {
-		tokenResult, _ = c.idTokenProvider.Authenticate()
+		var err error
+		tokenResult, err = c.idTokenProvider.Authenticate()
+		if err != nil {
+			return "", err
+		}
 	}
 
 	c.cache.CacheTokens(tokenResult)
 
-	return tokenResult.IDToken
+	return tokenResult.IDToken, nil
 }
 
 func (c *cachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult {
+	// TODO: log the refreshErr somewhere
 	tokenResult, refreshErr := c.idTokenProvider.FromRefreshToken(refreshToken)
 	if refreshErr != nil {
 		return nil
