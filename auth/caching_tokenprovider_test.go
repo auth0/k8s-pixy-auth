@@ -27,10 +27,15 @@ func genValidTokenWithExp(exp time.Time) string {
 
 type inMemoryCachingProvider struct {
 	ReturnToken *TokenResult
+	CachedToken *TokenResult
 }
 
-func (i *inMemoryCachingProvider) GetTokens() (*TokenResult, error) {
-	return i.ReturnToken, nil
+func (i *inMemoryCachingProvider) GetTokens() *TokenResult {
+	return i.ReturnToken
+}
+
+func (i *inMemoryCachingProvider) CacheTokens(toCache *TokenResult) {
+	i.CachedToken = toCache
 }
 
 type mockTokenProvider struct {
@@ -144,13 +149,33 @@ var _ = Describe("cachingTokenProvider", func() {
 		Expect(idToken).To(Equal(idTokenProvider.ReturnAuthenticateToken.IDToken))
 	})
 
-	// when the tokenResult is nil
+	It("caches id and refresh tokens after authenticating", func() {
+		idTokenProvider.ReturnAuthenticateToken = &TokenResult{
+			IDToken:      "testToken",
+			RefreshToken: "refreshToken",
+		}
 
-	// It("caches new id token after refreshing it", func() {
-	// })
+		ctp.GetIDToken()
 
-	// ignores errors when interacting with cache
+		Expect(inMemCache.CachedToken).To(Equal(idTokenProvider.ReturnAuthenticateToken))
+	})
 
-	// get a new id token along with a refresh token and cache them
+	It("caches the new id token and orig refresh token after refreshing", func() {
+		inMemCache.ReturnToken = &TokenResult{
+			IDToken:      genValidTokenWithExp(time.Now().Add(time.Second * -50)),
+			RefreshToken: "refreshToken",
+		}
+		idTokenProvider.ReturnRefreshToken = &TokenResult{
+			IDToken: "refreshedToken",
+		}
+
+		ctp.GetIDToken()
+
+		Expect(inMemCache.CachedToken).To(Equal(&TokenResult{
+			IDToken:      idTokenProvider.ReturnRefreshToken.IDToken,
+			RefreshToken: inMemCache.ReturnToken.RefreshToken,
+		}))
+	})
+
 	// propogates errors
 })

@@ -7,7 +7,8 @@ import (
 )
 
 type cachingProvider interface {
-	GetTokens() (*TokenResult, error)
+	GetTokens() *TokenResult
+	CacheTokens(*TokenResult)
 }
 
 type tokenProvider interface {
@@ -27,6 +28,8 @@ func (c *cachingTokenProvider) GetIDToken() string {
 		tokenResult, _ = c.idTokenProvider.Authenticate()
 	}
 
+	c.cache.CacheTokens(tokenResult)
+
 	return tokenResult.IDToken
 }
 
@@ -36,11 +39,13 @@ func (c *cachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult
 		return nil
 	}
 
+	tokenResult.RefreshToken = refreshToken
+
 	return tokenResult
 }
 
 func (c *cachingTokenProvider) refreshFromCache() *TokenResult {
-	tokenResult, _ := c.cache.GetTokens()
+	tokenResult := c.cache.GetTokens()
 
 	if tokenResult == nil {
 		return nil
