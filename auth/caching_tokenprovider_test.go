@@ -57,15 +57,15 @@ func (m *mockTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult,
 	return m.ReturnRefreshToken, m.ReturnRefreshError
 }
 
-var _ = Describe("cachingTokenProvider", func() {
+var _ = Describe("CachingTokenProvider", func() {
 	var inMemCache *inMemoryCachingProvider
 	var idTokenProvider *mockTokenProvider
-	var ctp cachingTokenProvider
+	var ctp CachingTokenProvider
 
 	BeforeEach(func() {
 		inMemCache = &inMemoryCachingProvider{}
 		idTokenProvider = &mockTokenProvider{}
-		ctp = cachingTokenProvider{
+		ctp = CachingTokenProvider{
 			cache:           inMemCache,
 			idTokenProvider: idTokenProvider,
 		}

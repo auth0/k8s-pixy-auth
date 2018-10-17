@@ -1,41 +1,74 @@
 package main
 
 import (
-	"time"
-
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-func genValidTokenWithExp(exp time.Time) string {
-	key := []byte("secret")
-	claims := &jwt.StandardClaims{
-		ExpiresAt: exp.Unix(),
-		Issuer:    "test",
-	}
+type mockConfigProvider struct {
+	ReturnIDToken             string
+	ReturnRefreshToken        string
+	GetTokensCalledIdentifier string
+	SavedIdentifier           string
+	SavedIDToken              string
+	SavedRefreshToken         string
+}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	ss, err := token.SignedString(key)
-	if err != nil {
-		panic(err)
-	}
+func (m *mockConfigProvider) GetTokens(identifier string) (string, string) {
+	m.GetTokensCalledIdentifier = identifier
+	return m.ReturnIDToken, m.ReturnRefreshToken
+}
 
-	return ss
+func (m *mockConfigProvider) SaveTokens(identifier, idToken, refreshToken string) {
+	m.SavedIdentifier = identifier
+	m.SavedIDToken = idToken
+	m.SavedRefreshToken = refreshToken
 }
 
 var _ = Describe("main", func() {
-	Describe("isTokenExpired", func() {
-		It("returns true when it's expired", func() {
-			token := genValidTokenWithExp(time.Now().Truncate(time.Minute * 1))
+	Describe("configCachingProvider", func() {
+		It("sets up the identifier using the clientID and audience", func() {
+			p := newConfigBackedCachingProvider("iamclientid", "iamaudience", &mockConfigProvider{})
 
-			Expect(true).To(Equal(IsTokenExpired(token)))
+			Expect(p.identifier).To(Equal("iamclientid-iamaudience"))
 		})
 
-		It("returns false when it's not expired", func() {
-			token := genValidTokenWithExp(time.Now().Add(time.Minute * 1))
+		It("gets tokens from the config provider", func() {
+			c := &mockConfigProvider{
+				ReturnIDToken:      "idToken",
+				ReturnRefreshToken: "refreshToken",
+			}
+			p := configBackedCachingProvider{
+				identifier: "iamidentifier",
+				config:     c,
+			}
 
-			Expect(false).To(Equal(IsTokenExpired(token)))
+			r := p.GetTokens()
+
+			Expect(c.GetTokensCalledIdentifier).To(Equal(p.identifier))
+			Expect(r).To(Equal(&auth.TokenResult{
+				IDToken:      c.ReturnIDToken,
+				RefreshToken: c.ReturnRefreshToken,
+			}))
+		})
+
+		It("caches the tokens in the config provider", func() {
+			c := &mockConfigProvider{}
+			p := configBackedCachingProvider{
+				identifier: "iamidentifier",
+				config:     c,
+			}
+			toSave := &auth.TokenResult{
+				IDToken:      "idToken",
+				RefreshToken: "refreshToken",
+			}
+
+			p.CacheTokens(toSave)
+
+			Expect(c.SavedIdentifier).To(Equal(p.identifier))
+			Expect(c.SavedIDToken).To(Equal(toSave.IDToken))
+			Expect(c.SavedRefreshToken).To(Equal(toSave.RefreshToken))
 		})
 	})
 })

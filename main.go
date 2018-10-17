@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/auth0/auth0-kubectl-auth/auth"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/clientauthentication/v1beta1"
 )
@@ -32,44 +31,57 @@ func main() {
 	fmt.Println(string(jCreds))
 }
 
-type tokenCache interface {
-	GetTokens(clientID string) (string, string)
-	CacheTokens(clientID, idToken, refreshToken string)
+type tokenProvider interface {
+	GetIDToken() (string, error)
 }
 
 // getAuthToken
-func getAuthToken(domain, clientID, audience string) string {
-	//todo: redo config
-	//config := newConfigFromFile()
-	//idToken, refreshToken := config.GetTokens(clientID)
+func getAuthToken(issuer, clientID, audience string) string {
+	provider := newCachingTokenProviderFromConfigFile(issuer, clientID, audience)
 
-	// if idToken != "" && refreshToken != "" {
-	// 	if !IsTokenExpired(idToken) {
-	// 		return idToken
-	// 	}
-
-	// 	idToken = refreshTokenExchangeFlow(domain, clientID, refreshToken)
-	// } else {
-	//todo: reimplement refresh token flow
-	tokenResult := pkceFlow(domain, clientID, audience)
-	idToken := tokenResult.IDToken
-	//}
-
-	//config.CacheTokens(clientID, idToken, refreshToken)
+	idToken, err := provider.GetIDToken()
+	if err != nil {
+		panic(err)
+	}
 
 	return idToken
 }
 
-// IsTokenExpired ...
-func IsTokenExpired(token string) bool {
-	p := jwt.Parser{}
+func newCachingTokenProviderFromConfigFile(issuer, clientID, audience string) tokenProvider {
+	return auth.NewCachingTokenProvider(
+		newConfigBackedCachingProvider(clientID, audience, newConfigFromFile()),
+		auth.NewDefaultIDTokenProvider(auth.Issuer{
+			IssuerEndpoint: issuer,
+			ClientID:       clientID,
+			Audience:       audience,
+		}))
+}
 
-	// since we are just getting the expiration time we can unsafely parse
-	claims := jwt.MapClaims{}
-	_, _, err := p.ParseUnverified(token, claims)
-	if err != nil {
-		panic(fmt.Errorf("could not parse jwt token: %s", err))
+type configProvider interface {
+	GetTokens(identifier string) (string, string)
+	SaveTokens(identifier, idToken, refreshToken string)
+}
+
+type configBackedCachingProvider struct {
+	identifier string
+	config     configProvider
+}
+
+func newConfigBackedCachingProvider(clientID, audience string, config configProvider) *configBackedCachingProvider {
+	return &configBackedCachingProvider{
+		identifier: fmt.Sprintf("%s-%s", clientID, audience),
+		config:     config,
 	}
+}
 
-	return !claims.VerifyExpiresAt(time.Now().Unix(), true)
+func (c *configBackedCachingProvider) GetTokens() *auth.TokenResult {
+	idToken, refreshToken := c.config.GetTokens(c.identifier)
+	return &auth.TokenResult{
+		IDToken:      idToken,
+		RefreshToken: refreshToken,
+	}
+}
+
+func (c *configBackedCachingProvider) CacheTokens(toCache *auth.TokenResult) {
+	c.config.SaveTokens(c.identifier, toCache.IDToken, toCache.RefreshToken)
 }

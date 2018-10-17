@@ -32,13 +32,13 @@ clients:
 			Expect(refreshToken).To(BeEmpty())
 		})
 
-		It("cache should overwrite old tokens", func() {
+		It("save should overwrite old tokens", func() {
 			updatedYaml := `clients:
   testing:
     idToken: newIdToken
     refreshToken: newRefreshToken
 `
-			config.CacheTokens("testing", "newIdToken", "newRefreshToken")
+			config.SaveTokens("testing", "newIdToken", "newRefreshToken")
 
 			Expect(buffer.String()).To(Equal(updatedYaml))
 		})

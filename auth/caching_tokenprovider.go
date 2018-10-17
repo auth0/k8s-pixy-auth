@@ -16,12 +16,19 @@ type tokenProvider interface {
 	Authenticate() (*TokenResult, error)
 }
 
-type cachingTokenProvider struct {
+type CachingTokenProvider struct {
 	cache           cachingProvider
 	idTokenProvider tokenProvider
 }
 
-func (c *cachingTokenProvider) GetIDToken() (string, error) {
+func NewCachingTokenProvider(cache cachingProvider, idTokenProvider tokenProvider) *CachingTokenProvider {
+	return &CachingTokenProvider{
+		cache:           cache,
+		idTokenProvider: idTokenProvider,
+	}
+}
+
+func (c *CachingTokenProvider) GetIDToken() (string, error) {
 	tokenResult := c.refreshFromCache()
 
 	if tokenResult == nil {
@@ -37,7 +44,7 @@ func (c *cachingTokenProvider) GetIDToken() (string, error) {
 	return tokenResult.IDToken, nil
 }
 
-func (c *cachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult {
+func (c *CachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult {
 	// TODO: log the refreshErr somewhere
 	tokenResult, refreshErr := c.idTokenProvider.FromRefreshToken(refreshToken)
 	if refreshErr != nil {
@@ -49,7 +56,7 @@ func (c *cachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult
 	return tokenResult
 }
 
-func (c *cachingTokenProvider) refreshFromCache() *TokenResult {
+func (c *CachingTokenProvider) refreshFromCache() *TokenResult {
 	tokenResult := c.cache.GetTokens()
 
 	if tokenResult == nil {
