@@ -25,7 +25,7 @@ type ClientConfiguration struct {
 
 // NewConfig creates and returns a config object that reads from the default
 // config file
-func NewConfig(r io.ReadWriter) Configuration {
+func NewConfig(r io.ReadWriter) *Configuration {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading config reader: %s", err))
@@ -39,7 +39,7 @@ func NewConfig(r io.ReadWriter) Configuration {
 		panic(fmt.Errorf("Unmarshal: %v", err))
 	}
 
-	return c
+	return &c
 }
 
 func getHomeDir() string {
@@ -50,7 +50,7 @@ func getHomeDir() string {
 	return usr.HomeDir
 }
 
-func newConfigFromFile() Configuration {
+func newConfigFromFile() *Configuration {
 	configFileName := "config"
 	configFilePath := filepath.Join(getHomeDir(), ".auth0-k8s-client-go-exec-plugin")
 
@@ -94,8 +94,8 @@ func (c *Configuration) GetTokens(clientID string) (string, string) {
 	return client.IDToken, client.RefreshToken
 }
 
-// CacheTokens ...
-func (c *Configuration) CacheTokens(clientID, idToken, refreshToken string) {
+// SaveTokens ...
+func (c *Configuration) SaveTokens(clientID, idToken, refreshToken string) {
 
 	c.Clients[clientID] = ClientConfiguration{
 		IDToken:      idToken,
