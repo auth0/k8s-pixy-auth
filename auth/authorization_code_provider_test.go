@@ -11,6 +11,7 @@ import (
 type mockCallbackListener struct {
 	responseChannel chan CallbackResponse
 	responseChReady chan bool
+	CalledWithState string
 	AwaitCalled     bool
 	ListenURL       string
 	CloseCalled     bool
@@ -33,8 +34,9 @@ func (cb *mockCallbackListener) CompleteCallback(resp CallbackResponse) {
 	cb.responseChannel <- resp
 }
 
-func (cb *mockCallbackListener) AwaitResponse(resp chan CallbackResponse) {
+func (cb *mockCallbackListener) AwaitResponse(resp chan CallbackResponse, state string) {
 	cb.AwaitCalled = true
+	cb.CalledWithState = state
 	cb.responseChannel = resp
 	cb.responseChReady <- true
 }
@@ -77,10 +79,11 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			&mockInteractor{},
 		)
-		go provider.GetCode(challenge)
+		go provider.GetCode(challenge, "noonce")
 
 		mockListener.CompleteCallback(CallbackResponse{})
 		Expect(mockListener.AwaitCalled).To(BeTrue())
+		Expect(mockListener.CalledWithState).To(Equal("noonce"))
 		close(done)
 	})
 
@@ -93,7 +96,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		)
 		go mockListener.CompleteCallback(CallbackResponse{})
 
-		provider.GetCode(challenge)
+		provider.GetCode(challenge, "")
 
 		Expect(mockListener.CloseCalled).To(BeTrue())
 	})
@@ -109,7 +112,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 		go mockListener.CompleteCallback(CallbackResponse{})
 
-		provider.GetCode(challenge)
+		provider.GetCode(challenge, "noonce")
 
 		parsedURL, err := url.Parse(mockOSInteractor.Url)
 
@@ -118,7 +121,8 @@ var _ = Describe("AuthCodeProvider", func() {
 		Expect(parsedURL.Host).To(Equal("issuer"))
 
 		params := parsedURL.Query()
-		Expect(len(params)).To(Equal(7))
+		Expect(len(params)).To(Equal(8))
+		Expect(params.Get("state")).To(Equal("noonce"))
 		Expect(params.Get("audience")).To(Equal(issuerData.Audience))
 		Expect(params.Get("scope")).To(Equal("openid offline_access email"))
 		Expect(params.Get("response_type")).To(Equal("code"))
@@ -138,7 +142,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 		go mockListener.CompleteCallback(CallbackResponse{Code: "mycode", Error: nil})
 
-		result, _ := provider.GetCode(challenge)
+		result, _ := provider.GetCode(challenge, "")
 		Expect(result.Code).To(Equal("mycode"))
 		Expect(result.RedirectURI).To(Equal(mockListener.GetCallbackURL()))
 
@@ -154,7 +158,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			},
 		)
 
-		_, err := provider.GetCode(challenge)
+		_, err := provider.GetCode(challenge, "")
 
 		Expect(err.Error()).To(Equal("someerror"))
 	})
@@ -172,7 +176,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			Error: errors.New("someerror"),
 		})
 
-		result, err := provider.GetCode(challenge)
+		result, err := provider.GetCode(challenge, "")
 
 		Expect(result).To(BeNil())
 		Expect(err).NotTo(BeNil())

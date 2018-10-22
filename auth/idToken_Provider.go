@@ -12,11 +12,12 @@ type IDTokenProvider struct {
 	codeProvider AuthorizationCodeProvider
 	exchanger    AuthorizationTokenExchanger
 	challenger   Challenger
+	state        State
 }
 
 // AuthorizationCodeProvider abstracts getting an authorization code
 type AuthorizationCodeProvider interface {
-	GetCode(challenge Challenge) (*AuthorizationCodeResult, error)
+	GetCode(challenge Challenge, state string) (*AuthorizationCodeResult, error)
 }
 
 // AuthorizationTokenExchanger abstracts exchanging for tokens
@@ -44,12 +45,14 @@ func NewIDTokenProvider(
 	issuerData Issuer,
 	codeProvider AuthorizationCodeProvider,
 	exchanger AuthorizationTokenExchanger,
-	challenger Challenger) *IDTokenProvider {
+	challenger Challenger,
+	state State) *IDTokenProvider {
 	return &IDTokenProvider{
 		issuerData:   issuerData,
 		codeProvider: codeProvider,
 		exchanger:    exchanger,
 		challenger:   challenger,
+		state:        state,
 	}
 }
 
@@ -69,14 +72,16 @@ func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
 		issuerData,
 		codeProvider,
 		tokenRetriever,
-		DefaultChallengeGenerator)
+		DefaultChallengeGenerator,
+		DefaultStateGenerator)
 }
 
 // Authenticate is used to retrieve a TokenResult when the user has not yet
 // authenticated
 func (p *IDTokenProvider) Authenticate() (*TokenResult, error) {
 	challenge := p.challenger()
-	codeResult, err := p.codeProvider.GetCode(challenge)
+	state := p.state()
+	codeResult, err := p.codeProvider.GetCode(challenge, state)
 
 	if err != nil {
 		return nil, err

@@ -46,3 +46,11 @@ func generateChallenge(length int) Challenge {
 
 	return c
 }
+
+// State is used to generate a new state string
+type State func() string
+
+// DefaultStateGenerator generates a default State
+func DefaultStateGenerator() string {
+	return generateRandomString(32)
+}

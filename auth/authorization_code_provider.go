@@ -27,7 +27,7 @@ type CallbackResponse struct {
 // AuthorizationCallbackListener abstracts listening for the authorization callback
 type AuthorizationCallbackListener interface {
 	GetCallbackURL() string
-	AwaitResponse(response chan CallbackResponse)
+	AwaitResponse(response chan CallbackResponse, state string)
 	Close()
 }
 
@@ -50,19 +50,20 @@ func NewLocalhostCodeProvider(
 
 // GetCode opens a URL to authenticate and authorize a user and then returns
 // the authrization code that is sent to the callback
-func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
+func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, state string) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
-	go cp.listener.AwaitResponse(codeReceiverCh)
+	go cp.listener.AwaitResponse(codeReceiverCh, state)
 
 	if err := cp.osInteractor.OpenURL(fmt.Sprintf(
-		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s",
+		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&state=%s",
 		cp.IssuerEndpoint,
 		cp.Audience,
 		cp.ClientID,
 		challenge.Code,
 		challenge.Method,
 		cp.listener.GetCallbackURL(),
+		state,
 	)); err != nil {
 		return nil, err
 	}

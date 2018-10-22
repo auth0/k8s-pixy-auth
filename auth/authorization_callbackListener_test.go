@@ -37,7 +37,7 @@ var _ = Describe("AuthCallbackService", func() {
 		resp := make(chan CallbackResponse)
 		defer close(resp)
 
-		server.AwaitResponse(resp)
+		server.AwaitResponse(resp, "")
 
 		Expect(mockHTTP.StartCalled).To(BeTrue())
 	})
@@ -48,9 +48,9 @@ var _ = Describe("AuthCallbackService", func() {
 		resp := make(chan CallbackResponse)
 		defer close(resp)
 
-		req := httptest.NewRequest("GET", "/callback?code=1234", nil)
+		req := httptest.NewRequest("GET", "/callback?code=1234&state=noonce", nil)
 
-		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
+		go server.BuildCodeResponseHandler(resp, "noonce")(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Code: "1234"}))
 	})
@@ -69,9 +69,9 @@ var _ = Describe("AuthCallbackService", func() {
 		resp := make(chan CallbackResponse)
 		defer close(resp)
 
-		req := httptest.NewRequest("GET", "/callback?error=uh_oh&error_description=something%20went%20wrong", nil)
+		req := httptest.NewRequest("GET", "/callback?error=uh_oh&error_description=something%20went%20wrong&state=noonce", nil)
 
-		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
+		go server.BuildCodeResponseHandler(resp, "noonce")(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("uh_oh: something went wrong")}))
 	})
@@ -82,9 +82,9 @@ var _ = Describe("AuthCallbackService", func() {
 		resp := make(chan CallbackResponse)
 		defer close(resp)
 
-		req := httptest.NewRequest("GET", "/callback", nil)
+		req := httptest.NewRequest("GET", "/callback?state=noonce", nil)
 
-		go server.BuildCodeResponseHandler(resp)(mockHTTP.httpRecorder, req)
+		go server.BuildCodeResponseHandler(resp, "noonce")(mockHTTP.httpRecorder, req)
 
 		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("callback completed with no error or code")}))
 	})
@@ -93,6 +93,19 @@ var _ = Describe("AuthCallbackService", func() {
 		l := NewLocalhostCallbackListener(1573)
 
 		Expect(l.addr).To(Equal("localhost:1573"))
+	})
+
+	It("errors when the state parameter does not match", func() {
+		server := NewCallbackListener("testing:1234", mockHTTP)
+
+		resp := make(chan CallbackResponse)
+		defer close(resp)
+
+		req := httptest.NewRequest("GET", "/callback?state=notnoonce", nil)
+
+		go server.BuildCodeResponseHandler(resp, "noonce")(mockHTTP.httpRecorder, req)
+
+		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("callback completed with incorrect state")}))
 	})
 
 	// It("shuts down after wait time")
