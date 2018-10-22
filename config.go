@@ -52,7 +52,7 @@ func getHomeDir() string {
 
 func newConfigFromFile() *Configuration {
 	configFileName := "config"
-	configFilePath := filepath.Join(getHomeDir(), ".auth0-k8s-client-go-exec-plugin")
+	configFilePath := filepath.Join(getHomeDir(), ".auth0-kubectl-auth")
 
 	fileLoc := filepath.Join(configFilePath, configFileName)
 
