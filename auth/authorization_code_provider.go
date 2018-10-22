@@ -8,6 +8,7 @@ type LocalhostCodeProvider struct {
 	Issuer
 	listener     AuthorizationCallbackListener
 	osInteractor OSInteractor
+	state        State
 }
 
 // AuthorizationCodeResult holds the needed code and redirect URI needed to exchange a
@@ -40,19 +41,22 @@ type OSInteractor interface {
 func NewLocalhostCodeProvider(
 	issuer Issuer,
 	callbackListener AuthorizationCallbackListener,
-	osInteractor OSInteractor) *LocalhostCodeProvider {
+	osInteractor OSInteractor,
+	state State) *LocalhostCodeProvider {
 	return &LocalhostCodeProvider{
 		issuer,
 		callbackListener,
 		osInteractor,
+		state,
 	}
 }
 
 // GetCode opens a URL to authenticate and authorize a user and then returns
 // the authrization code that is sent to the callback
-func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, state string) (*AuthorizationCodeResult, error) {
+func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
+	state := cp.state()
 	go cp.listener.AwaitResponse(codeReceiverCh, state)
 
 	if err := cp.osInteractor.OpenURL(fmt.Sprintf(

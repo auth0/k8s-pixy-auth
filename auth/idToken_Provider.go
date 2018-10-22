@@ -12,12 +12,11 @@ type IDTokenProvider struct {
 	codeProvider AuthorizationCodeProvider
 	exchanger    AuthorizationTokenExchanger
 	challenger   Challenger
-	state        State
 }
 
 // AuthorizationCodeProvider abstracts getting an authorization code
 type AuthorizationCodeProvider interface {
-	GetCode(challenge Challenge, state string) (*AuthorizationCodeResult, error)
+	GetCode(challenge Challenge) (*AuthorizationCodeResult, error)
 }
 
 // AuthorizationTokenExchanger abstracts exchanging for tokens
@@ -45,14 +44,12 @@ func NewIDTokenProvider(
 	issuerData Issuer,
 	codeProvider AuthorizationCodeProvider,
 	exchanger AuthorizationTokenExchanger,
-	challenger Challenger,
-	state State) *IDTokenProvider {
+	challenger Challenger) *IDTokenProvider {
 	return &IDTokenProvider{
 		issuerData:   issuerData,
 		codeProvider: codeProvider,
 		exchanger:    exchanger,
 		challenger:   challenger,
-		state:        state,
 	}
 }
 
@@ -62,7 +59,9 @@ func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
 	codeProvider := NewLocalhostCodeProvider(
 		issuerData,
 		NewLocalhostCallbackListener(8080),
-		&os.DefaultInteractor{})
+		&os.DefaultInteractor{},
+		DefaultStateGenerator,
+	)
 
 	tokenRetriever := NewTokenRetriever(
 		issuerData.IssuerEndpoint,
@@ -72,16 +71,14 @@ func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
 		issuerData,
 		codeProvider,
 		tokenRetriever,
-		DefaultChallengeGenerator,
-		DefaultStateGenerator)
+		DefaultChallengeGenerator)
 }
 
 // Authenticate is used to retrieve a TokenResult when the user has not yet
 // authenticated
 func (p *IDTokenProvider) Authenticate() (*TokenResult, error) {
 	challenge := p.challenger()
-	state := p.state()
-	codeResult, err := p.codeProvider.GetCode(challenge, state)
+	codeResult, err := p.codeProvider.GetCode(challenge)
 
 	if err != nil {
 		return nil, err

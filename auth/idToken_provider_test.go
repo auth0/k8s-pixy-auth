@@ -9,15 +9,13 @@ import (
 
 type MockCodeProvider struct {
 	Called              bool
-	CalledWithState     string
 	CalledWithChallenge Challenge
 	AuthCodeResult      *AuthorizationCodeResult
 	ReturnsError        error
 }
 
-func (cp *MockCodeProvider) GetCode(challenge Challenge, state string) (*AuthorizationCodeResult, error) {
+func (cp *MockCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
 	cp.Called = true
-	cp.CalledWithState = state
 	cp.CalledWithChallenge = challenge
 	return cp.AuthCodeResult, cp.ReturnsError
 }
@@ -60,9 +58,6 @@ var _ = Describe("IDTokenProvider", func() {
 
 		mockChallenger := func() Challenge { return challengeResult }
 
-		stateResult := "randomstring1234"
-		mockState := func() string { return stateResult }
-
 		BeforeEach(func() {
 			mockCodeProvider = &MockCodeProvider{
 				AuthCodeResult: &AuthorizationCodeResult{
@@ -83,12 +78,10 @@ var _ = Describe("IDTokenProvider", func() {
 				mockCodeProvider,
 				mockTokenExchanger,
 				mockChallenger,
-				mockState,
 			)
 
 			_, _ = provider.Authenticate()
 			Expect(mockCodeProvider.Called).To(BeTrue())
-			Expect(mockCodeProvider.CalledWithState).To(Equal(stateResult))
 			Expect(mockCodeProvider.CalledWithChallenge).To(Equal(challengeResult))
 			Expect(mockTokenExchanger.CalledWithRequest).To(Equal(&AuthorizationCodeExchangeRequest{
 				ClientID:     issuer.ClientID,
@@ -104,7 +97,6 @@ var _ = Describe("IDTokenProvider", func() {
 				mockCodeProvider,
 				mockTokenExchanger,
 				mockChallenger,
-				mockState,
 			)
 
 			tokens, _ := provider.Authenticate()
@@ -120,7 +112,6 @@ var _ = Describe("IDTokenProvider", func() {
 				mockCodeProvider,
 				mockTokenExchanger,
 				mockChallenger,
-				mockState,
 			)
 
 			_, err := provider.Authenticate()
@@ -137,7 +128,6 @@ var _ = Describe("IDTokenProvider", func() {
 				mockCodeProvider,
 				mockTokenExchanger,
 				mockChallenger,
-				mockState,
 			)
 
 			_, err := provider.Authenticate()
@@ -154,7 +144,6 @@ var _ = Describe("IDTokenProvider", func() {
 			issuer,
 			nil,
 			mockTokenExchanger,
-			nil,
 			nil,
 		)
 
