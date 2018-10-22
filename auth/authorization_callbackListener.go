@@ -68,13 +68,14 @@ func (c *CallbackService) GetCallbackURL() string {
 
 // BuildCodeResponseHandler builds the HTTP handler func that receives the
 // authorization code callback
-func (c *CallbackService) BuildCodeResponseHandler(responseC chan CallbackResponse) func(w http.ResponseWriter, r *http.Request) {
+func (c *CallbackService) BuildCodeResponseHandler(responseC chan CallbackResponse, state string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		response := CallbackResponse{}
 
-		callbackErr := r.URL.Query().Get("error")
-
-		if callbackErr != "" {
+		if r.URL.Query().Get("state") != state {
+			response.Error = errors.New("callback completed with incorrect state")
+			w.Write([]byte("An error occured. Please check terminal for output."))
+		} else if callbackErr := r.URL.Query().Get("error"); callbackErr != "" {
 			response.Error = fmt.Errorf("%s: %s", callbackErr, r.URL.Query().Get("error_description"))
 			w.Write([]byte("An error occured. Please check terminal for output."))
 		} else if code := r.URL.Query().Get("code"); code != "" {
@@ -96,7 +97,7 @@ func (c *CallbackService) Close() {
 
 // AwaitResponse sets up the response channel to receive the code that comes in
 // the from authorizatino code callback handler
-func (c *CallbackService) AwaitResponse(response chan CallbackResponse) {
+func (c *CallbackService) AwaitResponse(response chan CallbackResponse, state string) {
 	c.httpServer.Start(c.addr)
-	http.HandleFunc("/callback", c.BuildCodeResponseHandler(response))
+	http.HandleFunc("/callback", c.BuildCodeResponseHandler(response, state))
 }

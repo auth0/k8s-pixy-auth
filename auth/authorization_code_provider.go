@@ -8,6 +8,7 @@ type LocalhostCodeProvider struct {
 	Issuer
 	listener     AuthorizationCallbackListener
 	osInteractor OSInteractor
+	state        State
 }
 
 // AuthorizationCodeResult holds the needed code and redirect URI needed to exchange a
@@ -27,7 +28,7 @@ type CallbackResponse struct {
 // AuthorizationCallbackListener abstracts listening for the authorization callback
 type AuthorizationCallbackListener interface {
 	GetCallbackURL() string
-	AwaitResponse(response chan CallbackResponse)
+	AwaitResponse(response chan CallbackResponse, state string)
 	Close()
 }
 
@@ -40,11 +41,13 @@ type OSInteractor interface {
 func NewLocalhostCodeProvider(
 	issuer Issuer,
 	callbackListener AuthorizationCallbackListener,
-	osInteractor OSInteractor) *LocalhostCodeProvider {
+	osInteractor OSInteractor,
+	state State) *LocalhostCodeProvider {
 	return &LocalhostCodeProvider{
 		issuer,
 		callbackListener,
 		osInteractor,
+		state,
 	}
 }
 
@@ -53,16 +56,18 @@ func NewLocalhostCodeProvider(
 func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
-	go cp.listener.AwaitResponse(codeReceiverCh)
+	state := cp.state()
+	go cp.listener.AwaitResponse(codeReceiverCh, state)
 
 	if err := cp.osInteractor.OpenURL(fmt.Sprintf(
-		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s",
+		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&state=%s",
 		cp.IssuerEndpoint,
 		cp.Audience,
 		cp.ClientID,
 		challenge.Code,
 		challenge.Method,
 		cp.listener.GetCallbackURL(),
+		state,
 	)); err != nil {
 		return nil, err
 	}

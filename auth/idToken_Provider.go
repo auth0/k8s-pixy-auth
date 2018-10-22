@@ -59,7 +59,9 @@ func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
 	codeProvider := NewLocalhostCodeProvider(
 		issuerData,
 		NewLocalhostCallbackListener(8080),
-		&os.DefaultInteractor{})
+		&os.DefaultInteractor{},
+		DefaultStateGenerator,
+	)
 
 	tokenRetriever := NewTokenRetriever(
 		issuerData.IssuerEndpoint,
