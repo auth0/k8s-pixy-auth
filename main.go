@@ -6,11 +6,23 @@ import (
 	"os"
 
 	"github.com/auth0/auth0-kubectl-auth/auth"
+	"github.com/auth0/auth0-kubectl-auth/initialization"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/clientauthentication/v1beta1"
 )
 
 func main() {
+	command := os.Args[1]
+
+	if command == "init" {
+		handleInit()
+	} else {
+		handleAuth()
+	}
+
+}
+
+func handleAuth() {
 	issuer := os.Args[1]
 	clientID := os.Args[2]
 	audience := os.Args[3]
@@ -29,6 +41,31 @@ func main() {
 
 	jCreds, _ := json.Marshal(creds)
 	fmt.Println(string(jCreds))
+}
+
+func handleInit() {
+	initializer := initialization.NewDefaultInitializer()
+
+	fmt.Println("Installing binary...")
+	binaryLocation, err := initializer.InstallBinary()
+	if err != nil {
+		panic(err)
+	}
+
+	contextName := os.Args[2]
+	issuer := os.Args[3]
+	clientID := os.Args[4]
+	audience := os.Args[5]
+
+	fmt.Println("Updating kube config...")
+	err = initializer.UpdateKubeConfig(contextName, binaryLocation, auth.Issuer{
+		IssuerEndpoint: issuer,
+		ClientID:       clientID,
+		Audience:       audience,
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 type tokenProvider interface {
