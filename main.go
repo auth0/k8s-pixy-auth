@@ -11,15 +11,43 @@ import (
 	"k8s.io/client-go/pkg/apis/clientauthentication/v1beta1"
 )
 
+const usage = `auth0-kubectl-auth -- handle kubectl exec auth via Auth0
+
+Usage:
+Exec Auth:
+	auth0-kubectl-auth [issuer-endpoint] [client-id] [audience]
+
+	Authenticates using either the browser or cache. Prints out the kubernetes 
+	formated auth info object.
+
+Help:
+	auth0-kubectl-auth --help
+
+	Show this help.
+
+Init:
+	auth0-kubectl-auth init [context] [issuer-endpoint] [client-id] [audience]
+
+	Copies this binary to ~/.auth0-kubectl-auth/bin and then setups kube config
+	to use it to exec auth for the specifies context.
+
+`
+
 func main() {
 	command := os.Args[1]
 
-	if command == "init" {
+	switch command {
+	case "init":
 		handleInit()
-	} else {
+	case "--help":
+		printHelp()
+	default:
 		handleAuth()
 	}
+}
 
+func printHelp() {
+	fmt.Println(usage)
 }
 
 func handleAuth() {
@@ -50,6 +78,10 @@ func handleInit() {
 	binaryLocation, err := initializer.InstallBinary()
 	if err != nil {
 		panic(err)
+	}
+
+	if len(os.Args) < 6 {
+		printHelp()
 	}
 
 	contextName := os.Args[2]
