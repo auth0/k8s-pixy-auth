@@ -114,8 +114,8 @@ func (init *Initializer) InstallBinary() (string, error) {
 		return "", fmt.Errorf("Error setting up the binary: %s", err.Error())
 	}
 
-	dest := filepath.Join(binaryInstallFolderPath, "auth0-kubectl-auth")
 	src := init.os.GetCurrentExecutableLocation()
+	dest := filepath.Join(binaryInstallFolderPath, filepath.Base(src))
 
 	err = init.os.CopyFile(src, dest)
 	if err != nil {

@@ -186,7 +186,7 @@ var _ = Describe("init", func() {
 		i.InstallBinary()
 
 		Expect(oSInteractor.CopyFileCalledWithSource).To(Equal("/tmp/binary"))
-		Expect(oSInteractor.CopyFileCalledWithDestination).To(Equal("/Users/testing/.auth0-kubectl-auth/bin/auth0-kubectl-auth"))
+		Expect(oSInteractor.CopyFileCalledWithDestination).To(Equal("/Users/testing/.auth0-kubectl-auth/bin/binary"))
 	})
 
 	It("returns an error when copying is unsuccessful", func() {
