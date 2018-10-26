@@ -78,8 +78,12 @@ func (init *Initializer) UpdateKubeConfig(contextName, binaryLocation string, is
 
 	config.AuthInfos[authInfoName] = &api.AuthInfo{
 		Exec: &api.ExecConfig{
-			Command:    binaryLocation,
-			Args:       []string{issuer.IssuerEndpoint, issuer.ClientID, issuer.Audience},
+			Command: binaryLocation,
+			Args: []string{
+				"auth",
+				fmt.Sprintf("--issuer-endpoint=%s", issuer.IssuerEndpoint),
+				fmt.Sprintf("--client-id=%s", issuer.ClientID),
+				fmt.Sprintf("--audience=%s", issuer.Audience)},
 			APIVersion: "client.authentication.k8s.io/v1beta1",
 		},
 	}

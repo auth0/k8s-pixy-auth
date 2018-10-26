@@ -1,7 +1,6 @@
-package main
+package auth
 
 import (
-	"github.com/auth0/auth0-kubectl-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -29,7 +28,7 @@ func (m *mockConfigProvider) SaveTokens(identifier, idToken, refreshToken string
 var _ = Describe("main", func() {
 	Describe("configCachingProvider", func() {
 		It("sets up the identifier using the clientID and audience", func() {
-			p := newConfigBackedCachingProvider("iamclientid", "iamaudience", &mockConfigProvider{})
+			p := NewConfigBackedCachingProvider("iamclientid", "iamaudience", &mockConfigProvider{})
 
 			Expect(p.identifier).To(Equal("iamclientid-iamaudience"))
 		})
@@ -47,7 +46,7 @@ var _ = Describe("main", func() {
 			r := p.GetTokens()
 
 			Expect(c.GetTokensCalledIdentifier).To(Equal(p.identifier))
-			Expect(r).To(Equal(&auth.TokenResult{
+			Expect(r).To(Equal(&TokenResult{
 				IDToken:      c.ReturnIDToken,
 				RefreshToken: c.ReturnRefreshToken,
 			}))
@@ -59,7 +58,7 @@ var _ = Describe("main", func() {
 				identifier: "iamidentifier",
 				config:     c,
 			}
-			toSave := &auth.TokenResult{
+			toSave := &TokenResult{
 				IDToken:      "idToken",
 				RefreshToken: "refreshToken",
 			}
