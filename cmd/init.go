@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/auth0/auth0-kubectl-auth/auth"
-	"github.com/auth0/auth0-kubectl-auth/initialization"
+	"github.com/auth0/k8s-pixy-auth/auth"
+	"github.com/auth0/k8s-pixy-auth/initialization"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ func init() {
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Install the binary and set up kube config to use the binary",
-	Long:  `Copies this binary to ~/.auth0-kubectl-auth/bin and then sets up kube config to use it to exec auth for the specified context.`,
+	Long:  `Copies this binary to ~/.k8s-pixy-auth/bin and then sets up kube config to use it to exec auth for the specified context.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initializer := initialization.NewDefaultInitializer()
 

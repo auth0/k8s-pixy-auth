@@ -9,7 +9,7 @@ DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
 LDFLAGS=-ldflags "-X $(PACKAGE_PATH)/cmd.commitSHA=$(COMMIT_SHA) -X $(PACKAGE_PATH)/cmd.version=$(VERSION_TAG) -X $(PACKAGE_PATH)/cmd.buildDate=$(DATE)"
 
-BINARY=auth0-kubectl-auth
+BINARY=k8s-pixy-auth
 
 .DEFAULT_GOAL: $(BINARY)
 

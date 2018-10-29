@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/auth0/auth0-kubectl-auth/cmd"
+	"github.com/auth0/k8s-pixy-auth/cmd"
 )
 
 func main() {

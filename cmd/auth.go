@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/auth0/auth0-kubectl-auth/auth"
-	"github.com/auth0/auth0-kubectl-auth/config"
+	"github.com/auth0/k8s-pixy-auth/auth"
+	"github.com/auth0/k8s-pixy-auth/config"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/apis/clientauthentication/v1beta1"

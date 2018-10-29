@@ -1,12 +1,12 @@
-# auth0-kubectl-auth
+# k8s-pixy-auth
 Transparently authenticate kubectl users using Auth0
 
 As of Kubernetes v1.11 there is beta support for a [client-go credentials plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). Using the support it is possible to use an Auth0 application to authenticate users and provide tokens with which a correctly configured Kubernetes cluster can authorize user actions.
 
 ## Installation
 At this point in the project installation is manual. In the future this will be automated.
-1. Pull down this repo with `git clone git@github.com:auth0/auth0-kubectl-auth.git `
-2. Build a binary with `go build -o ~/.kube/auth0-kubectl-auth`
+1. Pull down this repo with `git clone git@github.com:auth0/k8s-pixy-auth.git `
+2. Build a binary with `go build -o ~/.kube/k8s-pixy-auth`
 
 ## Configuration
 Before you can get up and running you need to configure a couple of things.
@@ -75,7 +75,7 @@ If you're following along with minikube, when you started minikube it put creden
   user:
     exec:
       apiVersion: "client.authentication.k8s.io/v1beta1"
-      command: "auth0-kubectl-auth"
+      command: "k8s-pixy-auth"
       args:
         - "<YOUR_AUTH0_DOMAIN>"
         - "<YOUR_AUTH0_APP_CLIENT_SECRET>"
@@ -87,7 +87,7 @@ which should look similar to:
   user:
     exec:
       apiVersion: "client.authentication.k8s.io/v1beta1"
-      command: "auth0-kubectl-auth"
+      command: "k8s-pixy-auth"
       args:
         - "joncarl.auth0.com"
         - "9WAjckTrfdYV6KY0HLR74u32X4Ta7d4H"

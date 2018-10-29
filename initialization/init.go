@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/auth0/auth0-kubectl-auth/auth"
-	"github.com/auth0/auth0-kubectl-auth/os"
+	"github.com/auth0/k8s-pixy-auth/auth"
+	"github.com/auth0/k8s-pixy-auth/os"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -47,7 +47,7 @@ type oSInteractor interface {
 	CopyFile(source, destination string) error
 }
 
-// Initializer provides a way to install the auth0-kubectl-auth binary as well
+// Initializer provides a way to install the k8s-pixy-auth binary as well
 // as set up kube config with the auth exec information
 type Initializer struct {
 	kubeConfigInteractor kubeConfigInteractor
@@ -63,7 +63,7 @@ func NewDefaultInitializer() *Initializer {
 }
 
 // UpdateKubeConfig updates the provided context in kube config with the
-// auth0-kubectl-auth exec information
+// k8s-pixy-auth exec information
 func (init *Initializer) UpdateKubeConfig(contextName, binaryLocation string, issuer auth.Issuer) error {
 	config, err := init.kubeConfigInteractor.LoadConfig()
 	if err != nil {
@@ -109,7 +109,7 @@ func associateClusterWithAuthInfo(config *api.Config, contextName, authInfoName 
 	config.Contexts[contextName].AuthInfo = authInfoName
 }
 
-// InstallBinary creates the ~/.auth0-kubectl-auth/bin folder if it does not
+// InstallBinary creates the ~/.k8s-pixy-auth/bin folder if it does not
 // exist and copies the currently running binary to that location. It will
 // return the absolute path of the installed binary.
 func (init *Initializer) InstallBinary() (string, error) {
@@ -131,7 +131,7 @@ func (init *Initializer) InstallBinary() (string, error) {
 
 func (init *Initializer) getBinaryInstallFolderPath() (string, error) {
 	absoluteHomeDirPath := init.os.GetHomeDirAbsolutePath()
-	absolutePath := filepath.Join(absoluteHomeDirPath, ".auth0-kubectl-auth", "bin")
+	absolutePath := filepath.Join(absoluteHomeDirPath, ".k8s-pixy-auth", "bin")
 
 	var err error
 	if !init.os.DoesPathExist(absolutePath) {

@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/auth0/auth0-kubectl-auth/os"
+	"github.com/auth0/k8s-pixy-auth/os"
 )
 
 // IDTokenProvider takes care of the mechanics needed for getting an ID Token

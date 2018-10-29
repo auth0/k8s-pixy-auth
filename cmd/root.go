@@ -21,7 +21,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "auth0-kubectl-auth",
+	Use:   "k8s-pixy-auth",
 	Short: "handle k8s client-go exec auth via PKCE auth",
 }
 

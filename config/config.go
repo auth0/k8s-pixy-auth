@@ -53,7 +53,7 @@ func getHomeDir() string {
 // NewConfigFromFile builds a new Configuration object using the default config file
 func NewConfigFromFile() *Configuration {
 	configFileName := "config"
-	configFilePath := filepath.Join(getHomeDir(), ".auth0-kubectl-auth")
+	configFilePath := filepath.Join(getHomeDir(), ".k8s-pixy-auth")
 
 	fileLoc := filepath.Join(configFilePath, configFileName)
 

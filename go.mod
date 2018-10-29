@@ -1,4 +1,4 @@
-module github.com/auth0/auth0-kubectl-auth
+module github.com/auth0/k8s-pixy-auth
 
 require (
 	github.com/alecthomas/gometalinter v2.0.11+incompatible // indirect

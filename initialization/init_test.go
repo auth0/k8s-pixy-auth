@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/auth0/auth0-kubectl-auth/auth"
+	"github.com/auth0/k8s-pixy-auth/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -167,10 +167,10 @@ var _ = Describe("init", func() {
 		Expect(err.Error()).To(Equal("Error saving kube config: someerror"))
 	})
 
-	It("creates the ~/.auth0-kubectl-auth/bin folder if it doesn't exist", func() {
+	It("creates the ~/.k8s-pixy-auth/bin folder if it doesn't exist", func() {
 		oSInteractor.ReturnGetHomeDirAbsolutePath = "/Users/testing/"
 		oSInteractor.ReturnDoesPathExist = false
-		expectedBinPath := "/Users/testing/.auth0-kubectl-auth/bin"
+		expectedBinPath := "/Users/testing/.k8s-pixy-auth/bin"
 		i.InstallBinary()
 
 		Expect(oSInteractor.DoesPathExistCalledWith).To(Equal(expectedBinPath))
@@ -185,13 +185,13 @@ var _ = Describe("init", func() {
 		Expect(err.Error()).To(Equal("Error setting up the binary: folder creation error"))
 	})
 
-	It("copies the binary to the ~/.auth0-kubectl-auth/bin folder", func() {
+	It("copies the binary to the ~/.k8s-pixy-auth/bin folder", func() {
 		oSInteractor.ReturnExecutableLocation = "/tmp/binary"
 		oSInteractor.ReturnGetHomeDirAbsolutePath = "/Users/testing/"
 		i.InstallBinary()
 
 		Expect(oSInteractor.CopyFileCalledWithSource).To(Equal("/tmp/binary"))
-		Expect(oSInteractor.CopyFileCalledWithDestination).To(Equal("/Users/testing/.auth0-kubectl-auth/bin/binary"))
+		Expect(oSInteractor.CopyFileCalledWithDestination).To(Equal("/Users/testing/.k8s-pixy-auth/bin/binary"))
 	})
 
 	It("returns an error when copying is unsuccessful", func() {
