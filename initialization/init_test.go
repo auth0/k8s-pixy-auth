@@ -102,7 +102,7 @@ var _ = Describe("init", func() {
 	It("changes the context user to the exec user", func() {
 		kubeConfigInteractor.ReturnConfig = &api.Config{
 			Contexts: map[string]*api.Context{
-				"context-name": &api.Context{
+				"context-name": {
 					AuthInfo: "context-name",
 					Cluster:  "cluster",
 				},

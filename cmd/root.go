@@ -25,6 +25,7 @@ var rootCmd = &cobra.Command{
 	Short: "handle k8s client-go exec auth via PKCE auth",
 }
 
+// Execute is the entry point for cobra cmd execution
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

@@ -16,11 +16,15 @@ type tokenProvider interface {
 	Authenticate() (*TokenResult, error)
 }
 
+// CachingTokenProvider satisfies the cmd.tokenProvider interface and is a
+// token provider that uses a cache to store tokens
 type CachingTokenProvider struct {
 	cache           cachingProvider
 	idTokenProvider tokenProvider
 }
 
+// NewCachingTokenProvider builds a new CachingTokenProvider using the passed
+// in interface satisfiers
 func NewCachingTokenProvider(cache cachingProvider, idTokenProvider tokenProvider) *CachingTokenProvider {
 	return &CachingTokenProvider{
 		cache:           cache,
@@ -28,6 +32,8 @@ func NewCachingTokenProvider(cache cachingProvider, idTokenProvider tokenProvide
 	}
 }
 
+// GetIDToken returns an id token using the cache and falls back to an id token
+// provider if the cache is empty
 func (c *CachingTokenProvider) GetIDToken() (string, error) {
 	tokenResult := c.refreshFromCache()
 

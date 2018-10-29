@@ -8,8 +8,11 @@ import (
 	"runtime"
 )
 
+// DefaultInteractor is the default OS interactor that wraps go standard os
+// package functionality to satisfy different interfaces
 type DefaultInteractor struct{}
 
+// OpenURL opens the passed in url in the default OS browser
 func (i *DefaultInteractor) OpenURL(url string) error {
 	var cmd string
 	var args []string
@@ -27,6 +30,8 @@ func (i *DefaultInteractor) OpenURL(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
+// GetCurrentExecutableLocation returns the location of the currently
+// executing binary
 func (i DefaultInteractor) GetCurrentExecutableLocation() string {
 	loc, err := os.Executable()
 	if err != nil {
@@ -36,6 +41,8 @@ func (i DefaultInteractor) GetCurrentExecutableLocation() string {
 	return loc
 }
 
+// GetHomeDirAbsolutePath returns the absolute path of the current users home
+// directory
 func (i DefaultInteractor) GetHomeDirAbsolutePath() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -44,15 +51,20 @@ func (i DefaultInteractor) GetHomeDirAbsolutePath() string {
 	return usr.HomeDir
 }
 
+// DoesPathExist returns a boolean as to whether the passed in path exists or
+// not
 func (i DefaultInteractor) DoesPathExist(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
 }
 
+// CreateAbsoluteFolderPath creates the passed in path as a directory
 func (i DefaultInteractor) CreateAbsoluteFolderPath(path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }
 
+// CopyFile copies the source file to the destination file preserving
+// permissions
 func (i DefaultInteractor) CopyFile(source, destination string) error {
 	sourceFile, err := os.Open(source)
 	if err != nil {

@@ -38,7 +38,7 @@ var _ = Describe("main", func() {
 				ReturnIDToken:      "idToken",
 				ReturnRefreshToken: "refreshToken",
 			}
-			p := configBackedCachingProvider{
+			p := ConfigBackedCachingProvider{
 				identifier: "iamidentifier",
 				config:     c,
 			}
@@ -54,7 +54,7 @@ var _ = Describe("main", func() {
 
 		It("caches the tokens in the config provider", func() {
 			c := &mockConfigProvider{}
-			p := configBackedCachingProvider{
+			p := ConfigBackedCachingProvider{
 				identifier: "iamidentifier",
 				config:     c,
 			}

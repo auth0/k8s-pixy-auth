@@ -8,24 +8,24 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type MockHttpServer struct {
+type mockHTTPServer struct {
 	StartCalled, ShutdownCalled bool
 	httpRecorder                *httptest.ResponseRecorder
 }
 
-func (s *MockHttpServer) Start(addr string) {
+func (s *mockHTTPServer) Start(addr string) {
 	s.StartCalled = true
 }
 
-func (s *MockHttpServer) Shutdown() {
+func (s *mockHTTPServer) Shutdown() {
 	s.ShutdownCalled = true
 }
 
 var _ = Describe("AuthCallbackService", func() {
-	var mockHTTP *MockHttpServer
+	var mockHTTP *mockHTTPServer
 
 	BeforeEach(func() {
-		mockHTTP = &MockHttpServer{
+		mockHTTP = &mockHTTPServer{
 			StartCalled:    false,
 			ShutdownCalled: false,
 			httpRecorder:   httptest.NewRecorder(),

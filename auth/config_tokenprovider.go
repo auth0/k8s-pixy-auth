@@ -7,19 +7,24 @@ type configProvider interface {
 	SaveTokens(identifier, idToken, refreshToken string)
 }
 
-type configBackedCachingProvider struct {
+// ConfigBackedCachingProvider wraps a configProvider in order to conform to
+// the cachingProvider interface
+type ConfigBackedCachingProvider struct {
 	identifier string
 	config     configProvider
 }
 
-func NewConfigBackedCachingProvider(clientID, audience string, config configProvider) *configBackedCachingProvider {
-	return &configBackedCachingProvider{
+// NewConfigBackedCachingProvider builds and returns a CachingTokenProvider
+// that utilizes a configProvider to cache tokens
+func NewConfigBackedCachingProvider(clientID, audience string, config configProvider) *ConfigBackedCachingProvider {
+	return &ConfigBackedCachingProvider{
 		identifier: fmt.Sprintf("%s-%s", clientID, audience),
 		config:     config,
 	}
 }
 
-func (c *configBackedCachingProvider) GetTokens() *TokenResult {
+// GetTokens gets the tokens from the cache and returns them as a TokenResult
+func (c *ConfigBackedCachingProvider) GetTokens() *TokenResult {
 	idToken, refreshToken := c.config.GetTokens(c.identifier)
 	return &TokenResult{
 		IDToken:      idToken,
@@ -27,6 +32,8 @@ func (c *configBackedCachingProvider) GetTokens() *TokenResult {
 	}
 }
 
-func (c *configBackedCachingProvider) CacheTokens(toCache *TokenResult) {
+// CacheTokens caches the id and refresh token from TokenResult in the
+// configProvider
+func (c *ConfigBackedCachingProvider) CacheTokens(toCache *TokenResult) {
 	c.config.SaveTokens(c.identifier, toCache.IDToken, toCache.RefreshToken)
 }

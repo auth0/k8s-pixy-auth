@@ -50,12 +50,12 @@ func (cb *mockCallbackListener) Close() {
 }
 
 type mockInteractor struct {
-	Url          string
+	URL          string
 	ReturnsError error
 }
 
 func (i *mockInteractor) OpenURL(url string) error {
-	i.Url = url
+	i.URL = url
 	return i.ReturnsError
 }
 
@@ -120,7 +120,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 		provider.GetCode(challenge)
 
-		parsedURL, err := url.Parse(mockOSInteractor.Url)
+		parsedURL, err := url.Parse(mockOSInteractor.URL)
 
 		Expect(err).To(BeNil())
 		Expect(parsedURL.Scheme).To(Equal("https"))
