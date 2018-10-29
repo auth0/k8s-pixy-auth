@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -50,7 +50,7 @@ func getHomeDir() string {
 	return usr.HomeDir
 }
 
-func newConfigFromFile() *Configuration {
+func NewConfigFromFile() *Configuration {
 	configFileName := "config"
 	configFilePath := filepath.Join(getHomeDir(), ".auth0-kubectl-auth")
 

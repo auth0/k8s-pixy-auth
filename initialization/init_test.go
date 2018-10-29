@@ -2,6 +2,7 @@ package initialization
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/auth0/auth0-kubectl-auth/auth"
@@ -117,7 +118,11 @@ var _ = Describe("init", func() {
 		issuer := auth.Issuer{IssuerEndpoint: "issuer", ClientID: "client-id", Audience: "audience"}
 		i.UpdateKubeConfig("context-name", "", issuer)
 
-		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.Args).To(Equal([]string{issuer.IssuerEndpoint, issuer.ClientID, issuer.Audience}))
+		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.Args).To(Equal([]string{
+			"auth",
+			fmt.Sprintf("--issuer-endpoint=%s", issuer.IssuerEndpoint),
+			fmt.Sprintf("--client-id=%s", issuer.ClientID),
+			fmt.Sprintf("--audience=%s", issuer.Audience)}))
 	})
 
 	It("adds the binary location", func() {
