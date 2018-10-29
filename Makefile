@@ -23,7 +23,8 @@ lint:
 
 .PHONY: test
 test:
-	@ginkgo ./...
+	@mkdir -p test-results/junit
+	gotestsum -f standard-verbose --junitfile test-results/junit/results.xml
 
 .PHONY: test-watch
 test-watch:
@@ -60,6 +61,8 @@ build-all-platforms: build-linux build-windows build-darwin
 .PHONY: install-tools
 install-tools:
 	go get -u golang.org/x/lint/golint
+	go get -u github.com/onsi/ginkgo/ginkgo
+	go get -u gotest.tools/gotestsum
 
 .PHONY: echo-version
 echo-version:
