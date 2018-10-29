@@ -11,6 +11,9 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
+      - run:
+          name: go modules bug workaround
+          command: go get k8s.io/client-go@release-9.0 # do this to "reset" the hash...
       - run: 
           name: install needed tools
           command: make install-tools
