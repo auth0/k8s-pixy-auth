@@ -67,7 +67,7 @@ workflows:
           requires:
             - build
           filters:
-            # tags:
-              # : /^v.*/
+            tags:
+              only: /^v.*/
             branches:
-              only: /^jon\/os-build/
+              only: /^master/
