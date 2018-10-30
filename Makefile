@@ -24,7 +24,7 @@ lint:
 .PHONY: test
 test:
 	@mkdir -p test-results/junit
-	gotestsum -f standard-verbose --junitfile test-results/junit/results.xml
+	go test -count=1 ./... # use count=1 to force not using the test cache
 
 .PHONY: test-watch
 test-watch:

@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestAuth0KubectlAuth(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Auth0KubectlAuth Config Suite")
+	junitReporter := reporters.NewJUnitReporter("../test-results/junit/config.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Auth0KubectlAuth Config Suite", []Reporter{junitReporter})
 }
 
 var _ = Describe("Config", func() {

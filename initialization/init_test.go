@@ -7,13 +7,15 @@ import (
 
 	"github.com/auth0/k8s-pixy-auth/auth"
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestAuth0KubectlAuth(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Auth0KubectlAuth Init Suite")
+	junitReporter := reporters.NewJUnitReporter("../test-results/junit/init.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Auth0KubectlAuth Init Suite", []Reporter{junitReporter})
 }
 
 type mockKubeConfigInteractor struct {
