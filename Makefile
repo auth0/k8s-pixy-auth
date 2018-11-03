@@ -64,6 +64,14 @@ install-tools:
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u gotest.tools/gotestsum
 
+.PHONY: install-modules
+install-modules:
+	go mod download
+
 .PHONY: echo-version
 echo-version:
 	@echo $(VERSION_TAG)
+
+.PHONY: package
+package:
+	./scripts/package.sh
