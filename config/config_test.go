@@ -20,33 +20,33 @@ var _ = Describe("Config", func() {
 		testYaml := `
 clients:
   testing:
-    idToken: testing_idToken
+    accessToken: testing_AccessToken
     refreshToken: testing_refreshToken
 `
 		buffer := bytes.NewBufferString(testYaml)
 		config := NewConfig(buffer)
 
 		It("gets tokens when present", func() {
-			idToken, refreshToken := config.GetTokens("testing")
+			AccessToken, refreshToken := config.GetTokens("testing")
 
-			Expect(idToken).To(Equal("testing_idToken"))
+			Expect(AccessToken).To(Equal("testing_AccessToken"))
 			Expect(refreshToken).To(Equal("testing_refreshToken"))
 		})
 
 		It("returns empty when no tokens are present for client", func() {
-			idToken, refreshToken := config.GetTokens("not_present")
+			AccessToken, refreshToken := config.GetTokens("not_present")
 
-			Expect(idToken).To(BeEmpty())
+			Expect(AccessToken).To(BeEmpty())
 			Expect(refreshToken).To(BeEmpty())
 		})
 
 		It("save should overwrite old tokens", func() {
 			updatedYaml := `clients:
   testing:
-    idToken: newIdToken
+    accessToken: newAccessToken
     refreshToken: newRefreshToken
 `
-			config.SaveTokens("testing", "newIdToken", "newRefreshToken")
+			config.SaveTokens("testing", "newAccessToken", "newRefreshToken")
 
 			Expect(buffer.String()).To(Equal(updatedYaml))
 		})

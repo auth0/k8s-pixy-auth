@@ -56,7 +56,7 @@ var _ = Describe("CodetokenExchanger", func() {
 			tokenRetriever := TokenRetriever{}
 			response := buildResponse(200, AuthorizationTokenResponse{
 				ExpiresIn:    1,
-				IDToken:      "myIdToken",
+				AccessToken:  "myAccessToken",
 				RefreshToken: "myRefreshToken",
 			})
 
@@ -65,7 +65,7 @@ var _ = Describe("CodetokenExchanger", func() {
 			Expect(err).To(BeNil())
 			Expect(result).To(Equal(&TokenResult{
 				ExpiresIn:    1,
-				IDToken:      "myIdToken",
+				AccessToken:  "myAccessToken",
 				RefreshToken: "myRefreshToken",
 			}))
 		})

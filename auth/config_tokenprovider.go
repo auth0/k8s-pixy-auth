@@ -4,7 +4,7 @@ import "fmt"
 
 type configProvider interface {
 	GetTokens(identifier string) (string, string)
-	SaveTokens(identifier, idToken, refreshToken string)
+	SaveTokens(identifier, accessToken, refreshToken string)
 }
 
 // ConfigBackedCachingProvider wraps a configProvider in order to conform to
@@ -25,9 +25,9 @@ func NewConfigBackedCachingProvider(clientID, audience string, config configProv
 
 // GetTokens gets the tokens from the cache and returns them as a TokenResult
 func (c *ConfigBackedCachingProvider) GetTokens() *TokenResult {
-	idToken, refreshToken := c.config.GetTokens(c.identifier)
+	accessToken, refreshToken := c.config.GetTokens(c.identifier)
 	return &TokenResult{
-		IDToken:      idToken,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
 }
@@ -35,5 +35,5 @@ func (c *ConfigBackedCachingProvider) GetTokens() *TokenResult {
 // CacheTokens caches the id and refresh token from TokenResult in the
 // configProvider
 func (c *ConfigBackedCachingProvider) CacheTokens(toCache *TokenResult) {
-	c.config.SaveTokens(c.identifier, toCache.IDToken, toCache.RefreshToken)
+	c.config.SaveTokens(c.identifier, toCache.AccessToken, toCache.RefreshToken)
 }

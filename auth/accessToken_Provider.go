@@ -6,8 +6,9 @@ import (
 	"github.com/auth0/k8s-pixy-auth/os"
 )
 
-// IDTokenProvider takes care of the mechanics needed for getting an ID Token
-type IDTokenProvider struct {
+// AccessTokenProvider takes care of the mechanics needed for getting an access
+// Token
+type AccessTokenProvider struct {
 	issuerData   Issuer
 	codeProvider AuthorizationCodeProvider
 	exchanger    AuthorizationTokenExchanger
@@ -27,7 +28,7 @@ type AuthorizationTokenExchanger interface {
 
 // TokenResult holds token information
 type TokenResult struct {
-	IDToken      string
+	AccessToken  string
 	RefreshToken string
 	ExpiresIn    int
 }
@@ -39,13 +40,13 @@ type Issuer struct {
 	Audience       string
 }
 
-// NewIDTokenProvider allows for the easy setup IDTokenProvider
-func NewIDTokenProvider(
+// NewAccessTokenProvider allows for the easy setup AccessTokenProvider
+func NewAccessTokenProvider(
 	issuerData Issuer,
 	codeProvider AuthorizationCodeProvider,
 	exchanger AuthorizationTokenExchanger,
-	challenger Challenger) *IDTokenProvider {
-	return &IDTokenProvider{
+	challenger Challenger) *AccessTokenProvider {
+	return &AccessTokenProvider{
 		issuerData:   issuerData,
 		codeProvider: codeProvider,
 		exchanger:    exchanger,
@@ -53,9 +54,9 @@ func NewIDTokenProvider(
 	}
 }
 
-// NewDefaultIDTokenProvider provides an easy way to build up a default token provider with
+// NewDefaultAccessTokenProvider provides an easy way to build up a default token provider with
 // all the correct configuration.
-func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
+func NewDefaultAccessTokenProvider(issuerData Issuer) *AccessTokenProvider {
 	codeProvider := NewLocalhostCodeProvider(
 		issuerData,
 		NewLocalhostCallbackListener(8080),
@@ -67,7 +68,7 @@ func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
 		issuerData.IssuerEndpoint,
 		&http.Client{})
 
-	return NewIDTokenProvider(
+	return NewAccessTokenProvider(
 		issuerData,
 		codeProvider,
 		tokenRetriever,
@@ -76,7 +77,7 @@ func NewDefaultIDTokenProvider(issuerData Issuer) *IDTokenProvider {
 
 // Authenticate is used to retrieve a TokenResult when the user has not yet
 // authenticated
-func (p *IDTokenProvider) Authenticate() (*TokenResult, error) {
+func (p *AccessTokenProvider) Authenticate() (*TokenResult, error) {
 	challenge := p.challenger()
 	codeResult, err := p.codeProvider.GetCode(challenge)
 
@@ -100,8 +101,8 @@ func (p *IDTokenProvider) Authenticate() (*TokenResult, error) {
 }
 
 // FromRefreshToken is used to retrieve a TokenResult when the user has already
-// authenticated but their ID Token has expired
-func (p *IDTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult, error) {
+// authenticated but their Access Token has expired
+func (p *AccessTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult, error) {
 	exchangeRequest := RefreshTokenExchangeRequest{
 		ClientID:     p.issuerData.ClientID,
 		RefreshToken: refreshToken,

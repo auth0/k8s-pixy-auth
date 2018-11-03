@@ -6,22 +6,22 @@ import (
 )
 
 type mockConfigProvider struct {
-	ReturnIDToken             string
+	ReturnAccessToken         string
 	ReturnRefreshToken        string
 	GetTokensCalledIdentifier string
 	SavedIdentifier           string
-	SavedIDToken              string
+	SavedAccessToken          string
 	SavedRefreshToken         string
 }
 
 func (m *mockConfigProvider) GetTokens(identifier string) (string, string) {
 	m.GetTokensCalledIdentifier = identifier
-	return m.ReturnIDToken, m.ReturnRefreshToken
+	return m.ReturnAccessToken, m.ReturnRefreshToken
 }
 
-func (m *mockConfigProvider) SaveTokens(identifier, idToken, refreshToken string) {
+func (m *mockConfigProvider) SaveTokens(identifier, accessToken, refreshToken string) {
 	m.SavedIdentifier = identifier
-	m.SavedIDToken = idToken
+	m.SavedAccessToken = accessToken
 	m.SavedRefreshToken = refreshToken
 }
 
@@ -35,7 +35,7 @@ var _ = Describe("main", func() {
 
 		It("gets tokens from the config provider", func() {
 			c := &mockConfigProvider{
-				ReturnIDToken:      "idToken",
+				ReturnAccessToken:  "accessToken",
 				ReturnRefreshToken: "refreshToken",
 			}
 			p := ConfigBackedCachingProvider{
@@ -47,7 +47,7 @@ var _ = Describe("main", func() {
 
 			Expect(c.GetTokensCalledIdentifier).To(Equal(p.identifier))
 			Expect(r).To(Equal(&TokenResult{
-				IDToken:      c.ReturnIDToken,
+				AccessToken:  c.ReturnAccessToken,
 				RefreshToken: c.ReturnRefreshToken,
 			}))
 		})
@@ -59,14 +59,14 @@ var _ = Describe("main", func() {
 				config:     c,
 			}
 			toSave := &TokenResult{
-				IDToken:      "idToken",
+				AccessToken:  "accessToken",
 				RefreshToken: "refreshToken",
 			}
 
 			p.CacheTokens(toSave)
 
 			Expect(c.SavedIdentifier).To(Equal(p.identifier))
-			Expect(c.SavedIDToken).To(Equal(toSave.IDToken))
+			Expect(c.SavedAccessToken).To(Equal(toSave.AccessToken))
 			Expect(c.SavedRefreshToken).To(Equal(toSave.RefreshToken))
 		})
 	})

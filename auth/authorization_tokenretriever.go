@@ -157,7 +157,7 @@ func (ce *TokenRetriever) handleAuthTokensResponse(resp *http.Response) (*TokenR
 	}
 
 	return &TokenResult{
-		IDToken:      atr.IDToken,
+		AccessToken:  atr.AccessToken,
 		RefreshToken: atr.RefreshToken,
 		ExpiresIn:    atr.ExpiresIn,
 	}, nil

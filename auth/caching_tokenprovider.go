@@ -19,27 +19,27 @@ type tokenProvider interface {
 // CachingTokenProvider satisfies the cmd.tokenProvider interface and is a
 // token provider that uses a cache to store tokens
 type CachingTokenProvider struct {
-	cache           cachingProvider
-	idTokenProvider tokenProvider
+	cache               cachingProvider
+	accessTokenProvider tokenProvider
 }
 
 // NewCachingTokenProvider builds a new CachingTokenProvider using the passed
 // in interface satisfiers
-func NewCachingTokenProvider(cache cachingProvider, idTokenProvider tokenProvider) *CachingTokenProvider {
+func NewCachingTokenProvider(cache cachingProvider, accessTokenProvider tokenProvider) *CachingTokenProvider {
 	return &CachingTokenProvider{
-		cache:           cache,
-		idTokenProvider: idTokenProvider,
+		cache:               cache,
+		accessTokenProvider: accessTokenProvider,
 	}
 }
 
-// GetIDToken returns an id token using the cache and falls back to an id token
-// provider if the cache is empty
-func (c *CachingTokenProvider) GetIDToken() (string, error) {
+// GetAccessToken returns an access token using the cache and falls back to an
+// access token provider if the cache is empty
+func (c *CachingTokenProvider) GetAccessToken() (string, error) {
 	tokenResult := c.refreshFromCache()
 
 	if tokenResult == nil {
 		var err error
-		tokenResult, err = c.idTokenProvider.Authenticate()
+		tokenResult, err = c.accessTokenProvider.Authenticate()
 		if err != nil {
 			return "", err
 		}
@@ -47,12 +47,12 @@ func (c *CachingTokenProvider) GetIDToken() (string, error) {
 
 	c.cache.CacheTokens(tokenResult)
 
-	return tokenResult.IDToken, nil
+	return tokenResult.AccessToken, nil
 }
 
 func (c *CachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult {
 	// TODO: log the refreshErr somewhere
-	tokenResult, refreshErr := c.idTokenProvider.FromRefreshToken(refreshToken)
+	tokenResult, refreshErr := c.accessTokenProvider.FromRefreshToken(refreshToken)
 	if refreshErr != nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (c *CachingTokenProvider) refreshFromCache() *TokenResult {
 		return nil
 	}
 
-	if isValidToken(tokenResult.IDToken) {
+	if isValidToken(tokenResult.AccessToken) {
 		return tokenResult
 	}
 

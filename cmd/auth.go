@@ -16,7 +16,7 @@ func init() {
 }
 
 type tokenProvider interface {
-	GetIDToken() (string, error)
+	GetAccessToken() (string, error)
 }
 
 var authCmd = &cobra.Command{
@@ -26,7 +26,7 @@ var authCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		provider := newCachingTokenProviderFromConfigFile(issuerEndpoint, clientID, audience)
 
-		idToken, err := provider.GetIDToken()
+		accessToken, err := provider.GetAccessToken()
 		if err != nil {
 			panic(err)
 		}
@@ -37,7 +37,7 @@ var authCmd = &cobra.Command{
 				APIVersion: "client.authentication.k8s.io/v1beta1",
 			},
 			Status: &v1beta1.ExecCredentialStatus{
-				Token: idToken,
+				Token: accessToken,
 			},
 		}
 
@@ -49,7 +49,7 @@ var authCmd = &cobra.Command{
 func newCachingTokenProviderFromConfigFile(issuer, clientID, audience string) tokenProvider {
 	return auth.NewCachingTokenProvider(
 		auth.NewConfigBackedCachingProvider(clientID, audience, config.NewConfigFromFile()),
-		auth.NewDefaultIDTokenProvider(auth.Issuer{
+		auth.NewDefaultAccessTokenProvider(auth.Issuer{
 			IssuerEndpoint: issuer,
 			ClientID:       clientID,
 			Audience:       audience,

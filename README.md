@@ -2,15 +2,15 @@
 [![License][license-image]][license-url]
 
 # k8s-pixy-auth
-Transparently authenticate kube config users using [PKCE (pixy) flow](https://auth0.com/docs/integrations/using-auth0-to-secure-a-cli)
+A kubectl plugin to authenticate against an OIDC compatible issuer using [PKCE (pixy) flow](https://auth0.com/docs/integrations/using-auth0-to-secure-a-cli)
 
 As of Kubernetes v1.11 there is beta support for a [client-go credentials plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). Using the support it is possible to use an Auth0 application to authenticate users and provide tokens with which a correctly configured Kubernetes cluster can authorize user actions.
 
 ## Installation
 At this point in the project installation is manual. In the future this will be automated.
 1. Make sure your Kubernetes api service is [configured to use OpenID Connect Tokens](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
-2. Pull down this repo with `git clone git@github.com:auth0/k8s-pixy-auth.git `
-3. Change to the cloned directory and build the binary with `go build`
+2. Download a release binary or pull down this repo with `git clone git@github.com:auth0/k8s-pixy-auth.git`
+3. If you pulled down the repo, change to the cloned directory and build the binary with `go build`
 4. Initialize your kube config making sure to use the argument values applicable to your cluster `k8s-pixy-auth init --context-name "minikube" --issuer-endpoint "https://joncarl.auth0.com" --audience "minikube" --client-id "QXV0aDAgaXMgaGlyaW5nISBhdXRoMC5jb20vY2FyZWVycyAK"`
 5. Run a command against Kubernetes like `kubectl get nodes`. Since this is the first time k8s-pixy-auth has been invoked for the context it will open a browser to authenticate you. 
 6. After authentication is complete, switch back to your terminal and you should see the output of the command. If you don't have permissions it will let you know. Make sure you've correctly set up permissions for your user.

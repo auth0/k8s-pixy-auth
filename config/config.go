@@ -19,7 +19,7 @@ type Configuration struct {
 
 // ClientConfiguration ...
 type ClientConfiguration struct {
-	IDToken      string `yaml:"idToken"`
+	AccessToken  string `yaml:"accessToken"`
 	RefreshToken string `yaml:"refreshToken"`
 }
 
@@ -92,14 +92,14 @@ func (c *Configuration) GetTokens(clientID string) (string, string) {
 		return "", ""
 	}
 
-	return client.IDToken, client.RefreshToken
+	return client.AccessToken, client.RefreshToken
 }
 
 // SaveTokens ...
-func (c *Configuration) SaveTokens(clientID, idToken, refreshToken string) {
+func (c *Configuration) SaveTokens(clientID, accessToken, refreshToken string) {
 
 	c.Clients[clientID] = ClientConfiguration{
-		IDToken:      idToken,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
 
