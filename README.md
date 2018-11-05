@@ -4,6 +4,8 @@
 # k8s-pixy-auth
 A kubectl plugin to authenticate against an OIDC compatible issuer using [PKCE (pixy) flow](https://auth0.com/docs/integrations/using-auth0-to-secure-a-cli)
 
+![demo](docs/images/k8s-pixy-auth.gif)
+
 As of Kubernetes v1.11 there is beta support for a [client-go credentials plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). Using the support it is possible to use an Auth0 application to authenticate users and provide tokens with which a correctly configured Kubernetes cluster can authorize user actions.
 
 ## Installation
