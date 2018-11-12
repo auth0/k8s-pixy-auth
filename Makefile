@@ -32,8 +32,13 @@ test-watch:
 
 .PHONY: cover
 cover:
-	go test -v -coverprofile cover.out ./...
+	go test -v -cover -race -coverprofile cover.out ./...
 	go tool cover -html=cover.out -o cover.html
+
+.PHONY: coveralls
+coveralls: cover
+	go get github.com/mattn/goveralls
+	goveralls -coverprofile=cover.out -service=circle-ci -repotoken=$(COVERALLS_TOKEN)
 
 .PHONY: fmt
 fmt:

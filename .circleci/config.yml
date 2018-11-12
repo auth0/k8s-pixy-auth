@@ -29,6 +29,9 @@ jobs:
           name: test
           command: make test
       - run:
+          name: coveralls
+          command: make coveralls
+      - run:
           name: build all
           command: make build-all-platforms
       - store_test_results: # Upload test results for display in Test Summary

@@ -1,5 +1,7 @@
 [![Build status][circleci-image]][circleci-url]
 [![License][license-image]][license-url]
+[![Go Report Card][go-report-card-image]][go-report-card-url]
+[![Coverage Status][coveralls-image]][coveralls-url]
 
 # k8s-pixy-auth
 A kubectl plugin to authenticate against an OIDC compatible issuer using [PKCE (pixy) flow](https://auth0.com/docs/integrations/using-auth0-to-secure-a-cli)
@@ -33,7 +35,11 @@ If you have found a bug or if you have a feature request, please report them at 
 
 This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
 
-[circleci-image]: https://img.shields.io/circleci/project/github/auth0/k8s-pixy-auth.svg?style=flat-square
+[circleci-image]: https://img.shields.io/circleci/project/github/auth0/k8s-pixy-auth.svg
 [circleci-url]: https://circleci.com/gh/auth0/k8s-pixy-auth/tree/master
-[license-image]: https://img.shields.io/npm/l/auth0-lock.svg?style=flat-square
+[license-image]: https://img.shields.io/github/license/auth0/k8s-pixy-auth.svg
 [license-url]: #license
+[go-report-card-image]: https://goreportcard.com/badge/github.com/auth0/k8s-pixy-auth
+[go-report-card-url]: https://goreportcard.com/report/github.com/auth0/k8s-pixy-auth
+[coveralls-image]: https://coveralls.io/repos/github/auth0/k8s-pixy-auth/badge.svg?branch=master
+[coveralls-url]: https://coveralls.io/github/auth0/k8s-pixy-auth?branch=master

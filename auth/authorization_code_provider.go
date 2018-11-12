@@ -19,7 +19,7 @@ type AuthorizationCodeResult struct {
 }
 
 // CallbackResponse holds the code gotten from the authorization callback.
-// Error will hold an error struct if an error occured.
+// Error will hold an error struct if an error occurred.
 type CallbackResponse struct {
 	Code  string
 	Error error
@@ -52,7 +52,7 @@ func NewLocalhostCodeProvider(
 }
 
 // GetCode opens a URL to authenticate and authorize a user and then returns
-// the authrization code that is sent to the callback
+// the authorization code that is sent to the callback
 func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
