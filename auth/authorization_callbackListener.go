@@ -74,16 +74,16 @@ func (c *CallbackService) BuildCodeResponseHandler(responseC chan CallbackRespon
 
 		if r.URL.Query().Get("state") != state {
 			response.Error = errors.New("callback completed with incorrect state")
-			w.Write([]byte("An error occured. Please check terminal for output."))
+			w.Write([]byte("An error occurred. Please check terminal for output."))
 		} else if callbackErr := r.URL.Query().Get("error"); callbackErr != "" {
 			response.Error = fmt.Errorf("%s: %s", callbackErr, r.URL.Query().Get("error_description"))
-			w.Write([]byte("An error occured. Please check terminal for output."))
+			w.Write([]byte("An error occurred. Please check terminal for output."))
 		} else if code := r.URL.Query().Get("code"); code != "" {
 			response.Code = code
 			w.Write([]byte("You've been authorized and may now close this browser page."))
 		} else {
 			response.Error = errors.New("callback completed with no error or code")
-			w.Write([]byte("An error occured. Please check terminal for output."))
+			w.Write([]byte("An error occurred. Please check terminal for output."))
 		}
 
 		responseC <- response

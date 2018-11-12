@@ -54,7 +54,7 @@ type Initializer struct {
 	os                   oSInteractor
 }
 
-// NewDefaultInitializer constructs an initalizer with default setup
+// NewDefaultInitializer constructs an initializer with default setup
 func NewDefaultInitializer() *Initializer {
 	return &Initializer{
 		kubeConfigInteractor: newDefaultKubeConfigFileInteractor(),
