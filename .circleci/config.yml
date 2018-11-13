@@ -3,15 +3,12 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11.1
+      - image: circleci/golang:1.11.2
     steps:
       - checkout
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-      - run:
-          name: go modules bug workaround
-          command: go get k8s.io/client-go@release-9.0 # do this to "reset" the hash...
       - run:
           name: download go modules
           command: make install-modules
