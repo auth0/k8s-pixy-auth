@@ -51,7 +51,6 @@ var authCmd = &cobra.Command{
 
 		jCreds, _ := json.Marshal(creds)
 		fmt.Println(string(jCreds))
-		// panic(string(jCreds))
 		return nil
 	},
 }
@@ -68,9 +67,10 @@ func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, k ke
 
 func getK8sKeyringSetup() (keyring.Keyring, error) {
 	return keyring.Open(keyring.Config{
-		ServiceName:      "k8s-pixy-auth",
-		FilePasswordFunc: k8sTerminalPrompt,
-		FileDir:          "~/.k8s-pixy-auth",
+		ServiceName:              "k8s-pixy-auth",
+		KeychainTrustApplication: true,
+		FilePasswordFunc:         k8sTerminalPrompt,
+		FileDir:                  "~/.k8s-pixy-auth",
 	})
 }
 
