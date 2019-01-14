@@ -66,11 +66,9 @@ minikube start --extra-config=apiserver.authorization-mode=RBAC \
 ```
 
 
-TODO: use namespaces groups and email with rule!!!
-
 The next step is to create groups. For this example we already have two groups on the Auth0 side: `cluster-admin` and `cluster-view`. To make these groups in Kubernetes, run the following:
-- `kubectl create clusterrolebinding platform-cluster-view --clusterrole=view --group=platform-cluster-view`
-- `kubectl create clusterrolebinding platform-cluster-admin --clusterrole=cluster-admin --group=platform-cluster-admin`
+- `kubectl create clusterrolebinding minikube-cluster-view --clusterrole=view --group=minikube-cluster-view`
+- `kubectl create clusterrolebinding minikube-cluster-admin --clusterrole=cluster-admin --group=minkube-cluster-admin`
 Note that we added `minikube-` to the beginning of the `--group`. As mentioned above, Kubernetes will automatically prepend `minikube-` to the group name from the token (`cluster-admin` becomes `minikube-cluster-admin`) and then matches that group against the groups already in Kubernetes.
 
 ## Kube Config Setup

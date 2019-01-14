@@ -48,6 +48,10 @@ func NewKeyringCachingProvider(clientID, audience string, kr keyringProvider) *K
 func (kcp *KeyringCachingProvider) GetTokens() (*TokenResult, error) {
 	item, err := kcp.keyring.Get(kcp.identifier)
 	if err != nil {
+		if err == keyring.ErrKeyNotFound {
+			return nil, nil
+		}
+
 		return nil, errors.Wrap(err, "error getting token information from keyring")
 	}
 

@@ -84,6 +84,19 @@ var _ = Describe("keyringCachingProvider", func() {
 		Expect(r).To(BeNil())
 	})
 
+	It("does not return an error when nothing can be found", func() {
+		k := &mockKeyringProvider{
+			GetReturnsError: keyring.ErrKeyNotFound,
+		}
+		p := NewKeyringCachingProvider("clientid", "audience", k)
+
+		r, err := p.GetTokens()
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k.GetCalledWith).To(Equal(p.identifier))
+		Expect(r).To(BeNil())
+	})
+
 	It("returns errors from unmarshalling the token result", func() {
 		k := &mockKeyringProvider{
 			GetReturnsItem: keyring.Item{
