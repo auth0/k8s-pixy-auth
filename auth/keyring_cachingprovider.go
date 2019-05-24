@@ -8,9 +8,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// keyringProvider is a small subset of the github.com/99designs/keyring
+// KeyringProvider is a small subset of the github.com/99designs/keyring
 // interface that only defines the functionality that we use
-type keyringProvider interface {
+type KeyringProvider interface {
 	Get(key string) (keyring.Item, error)
 	Set(item keyring.Item) error
 }
@@ -19,7 +19,7 @@ type keyringProvider interface {
 // tokens using the github.com/99designs/keyring interface
 type KeyringCachingProvider struct {
 	identifier string
-	keyring    keyringProvider
+	keyring    KeyringProvider
 	// marshalToJSON allows us to mock errors that could happen when
 	// marshalling to json
 	marshalToJSON func(interface{}) ([]byte, error)
@@ -36,10 +36,10 @@ func marshalToJSON(toMarshal interface{}) ([]byte, error) {
 
 // NewKeyringCachingProvider builds a new KeyringCachingProvider using the
 // passed in interface satisfiers
-func NewKeyringCachingProvider(clientID, audience string, kr keyringProvider) *KeyringCachingProvider {
+func NewKeyringCachingProvider(clientID, audience string, krp KeyringProvider) *KeyringCachingProvider {
 	return &KeyringCachingProvider{
 		identifier:    fmt.Sprintf("%s-%s", clientID, audience),
-		keyring:       kr,
+		keyring:       krp,
 		marshalToJSON: marshalToJSON,
 	}
 }

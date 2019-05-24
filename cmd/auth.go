@@ -68,6 +68,7 @@ func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, k ke
 func getK8sKeyringSetup() (keyring.Keyring, error) {
 	return keyring.Open(keyring.Config{
 		ServiceName:              "k8s-pixy-auth",
+		KeychainName:             "k8s-pixy-auth",
 		KeychainTrustApplication: true,
 		FilePasswordFunc:         k8sTerminalPrompt,
 		FileDir:                  "~/.k8s-pixy-auth",
@@ -75,10 +76,18 @@ func getK8sKeyringSetup() (keyring.Keyring, error) {
 }
 
 func k8sTerminalPrompt(prompt string) (string, error) {
-	fmt.Fprint(os.Stderr, fmt.Sprintf("%s: ", prompt))
-	b, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-	if err != nil {
-		return "", err
+	pass := os.Getenv("KEYRING_K8S_PIXY_AUTH_PASSWORD")
+	if len(pass) == 0 {
+		fmt.Fprint(os.Stderr, "in the future you can set KEYRING_K8S_PIXY_AUTH_PASSWORD to bypass this prompt\n")
+		fmt.Fprint(os.Stderr, fmt.Sprintf("%s: ", prompt))
+		b, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+		if err != nil {
+			return "", err
+		}
+		pass = string(b)
+	} else {
+		fmt.Fprint(os.Stderr, "using KEYRING_K8S_PIXY_AUTH_PASSWORD\n")
 	}
-	return string(b), nil
+
+	return pass, nil
 }
