@@ -43,8 +43,9 @@ var _ = Describe("main", func() {
 				config:     c,
 			}
 
-			r := p.GetTokens()
+			r, err := p.GetTokens()
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetTokensCalledIdentifier).To(Equal(p.identifier))
 			Expect(r).To(Equal(&TokenResult{
 				AccessToken:  c.ReturnAccessToken,

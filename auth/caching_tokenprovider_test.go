@@ -25,17 +25,21 @@ func genValidTokenWithExp(exp time.Time) string {
 	return ss
 }
 
-type inMemoryCachingProvider struct {
-	ReturnToken *TokenResult
-	CachedToken *TokenResult
+type mockCachingProvider struct {
+	ReturnToken     *TokenResult
+	GetReturnsError error
+
+	CachedToken       *TokenResult
+	CacheReturnsError error
 }
 
-func (i *inMemoryCachingProvider) GetTokens() *TokenResult {
-	return i.ReturnToken
+func (i *mockCachingProvider) GetTokens() (*TokenResult, error) {
+	return i.ReturnToken, i.GetReturnsError
 }
 
-func (i *inMemoryCachingProvider) CacheTokens(toCache *TokenResult) {
+func (i *mockCachingProvider) CacheTokens(toCache *TokenResult) error {
 	i.CachedToken = toCache
+	return i.CacheReturnsError
 }
 
 type mockTokenProvider struct {
@@ -58,45 +62,45 @@ func (m *mockTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult,
 }
 
 var _ = Describe("CachingTokenProvider", func() {
-	var inMemCache *inMemoryCachingProvider
+	var mockCache *mockCachingProvider
 	var accessTokenProvider *mockTokenProvider
 	var ctp CachingTokenProvider
 
 	BeforeEach(func() {
-		inMemCache = &inMemoryCachingProvider{}
+		mockCache = &mockCachingProvider{}
 		accessTokenProvider = &mockTokenProvider{}
 		ctp = CachingTokenProvider{
-			cache:               inMemCache,
+			cache:               mockCache,
 			accessTokenProvider: accessTokenProvider,
 		}
 	})
 
 	It("returns an access token from the cache", func() {
-		inMemCache.ReturnToken = &TokenResult{
+		mockCache.ReturnToken = &TokenResult{
 			AccessToken: genValidTokenWithExp(time.Now().Add(time.Minute * 2)),
 		}
 
 		accessToken, _ := ctp.GetAccessToken()
 
-		Expect(accessToken).To(Equal(inMemCache.ReturnToken.AccessToken))
+		Expect(accessToken).To(Equal(mockCache.ReturnToken.AccessToken))
 	})
 
 	It("refreshes token when access token is invalid", func() {
 		accessTokenProvider.ReturnRefreshToken = &TokenResult{
 			AccessToken: "testToken",
 		}
-		inMemCache.ReturnToken = &TokenResult{
+		mockCache.ReturnToken = &TokenResult{
 			RefreshToken: "refreshToken",
 		}
 
 		accessToken, _ := ctp.GetAccessToken()
 
-		Expect(accessTokenProvider.CalledWithRefreshToken).To(Equal(inMemCache.ReturnToken.RefreshToken))
+		Expect(accessTokenProvider.CalledWithRefreshToken).To(Equal(mockCache.ReturnToken.RefreshToken))
 		Expect(accessToken).To(Equal(accessTokenProvider.ReturnRefreshToken.AccessToken))
 	})
 
 	It("runs a full authentication if refresh returns an error", func() {
-		inMemCache.ReturnToken = &TokenResult{
+		mockCache.ReturnToken = &TokenResult{
 			RefreshToken: "refreshToken",
 		}
 		accessTokenProvider.ReturnRefreshError = errors.New("someerror")
@@ -111,7 +115,7 @@ var _ = Describe("CachingTokenProvider", func() {
 	})
 
 	It("refreshes token when access token is expired", func() {
-		inMemCache.ReturnToken = &TokenResult{
+		mockCache.ReturnToken = &TokenResult{
 			AccessToken:  genValidTokenWithExp(time.Now().Add(time.Second * -50)),
 			RefreshToken: "refreshToken",
 		}
@@ -121,12 +125,12 @@ var _ = Describe("CachingTokenProvider", func() {
 
 		accessToken, _ := ctp.GetAccessToken()
 
-		Expect(accessTokenProvider.CalledWithRefreshToken).To(Equal(inMemCache.ReturnToken.RefreshToken))
+		Expect(accessTokenProvider.CalledWithRefreshToken).To(Equal(mockCache.ReturnToken.RefreshToken))
 		Expect(accessToken).To(Equal(accessTokenProvider.ReturnRefreshToken.AccessToken))
 	})
 
 	It("when nothing is in the cache", func() {
-		inMemCache.ReturnToken = nil
+		mockCache.ReturnToken = nil
 		accessTokenProvider.ReturnAuthenticateToken = &TokenResult{
 			AccessToken: "testToken",
 		}
@@ -138,7 +142,7 @@ var _ = Describe("CachingTokenProvider", func() {
 	})
 
 	It("authenticates when refresh and access token are empty", func() {
-		inMemCache.ReturnToken = &TokenResult{}
+		mockCache.ReturnToken = &TokenResult{}
 		accessTokenProvider.ReturnAuthenticateToken = &TokenResult{
 			AccessToken: "testToken",
 		}
@@ -157,11 +161,11 @@ var _ = Describe("CachingTokenProvider", func() {
 
 		ctp.GetAccessToken()
 
-		Expect(inMemCache.CachedToken).To(Equal(accessTokenProvider.ReturnAuthenticateToken))
+		Expect(mockCache.CachedToken).To(Equal(accessTokenProvider.ReturnAuthenticateToken))
 	})
 
 	It("caches the new access token and orig refresh token after refreshing", func() {
-		inMemCache.ReturnToken = &TokenResult{
+		mockCache.ReturnToken = &TokenResult{
 			AccessToken:  genValidTokenWithExp(time.Now().Add(time.Second * -50)),
 			RefreshToken: "refreshToken",
 		}
@@ -171,9 +175,9 @@ var _ = Describe("CachingTokenProvider", func() {
 
 		ctp.GetAccessToken()
 
-		Expect(inMemCache.CachedToken).To(Equal(&TokenResult{
+		Expect(mockCache.CachedToken).To(Equal(&TokenResult{
 			AccessToken:  accessTokenProvider.ReturnRefreshToken.AccessToken,
-			RefreshToken: inMemCache.ReturnToken.RefreshToken,
+			RefreshToken: mockCache.ReturnToken.RefreshToken,
 		}))
 	})
 
@@ -184,5 +188,25 @@ var _ = Describe("CachingTokenProvider", func() {
 
 		Expect(accessToken).To(BeEmpty())
 		Expect(err.Error()).To(Equal("someerror"))
+	})
+
+	It("passes along an error from caching tokens", func() {
+		mockCache.CacheReturnsError = errors.New("uh oh")
+
+		accessToken, err := ctp.GetAccessToken()
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("could not cache tokens: uh oh"))
+		Expect(accessToken).To(BeEmpty())
+	})
+
+	It("passes along an error from the cache when getting tokens returns an error", func() {
+		mockCache.GetReturnsError = errors.New("uh oh")
+
+		accessToken, err := ctp.GetAccessToken()
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("could get tokens from the cache: uh oh"))
+		Expect(accessToken).To(BeEmpty())
 	})
 })

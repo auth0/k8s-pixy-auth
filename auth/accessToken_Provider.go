@@ -28,9 +28,9 @@ type AuthorizationTokenExchanger interface {
 
 // TokenResult holds token information
 type TokenResult struct {
-	AccessToken  string
-	RefreshToken string
-	ExpiresIn    int
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"`
 }
 
 // Issuer holds information about the issuer of tokens

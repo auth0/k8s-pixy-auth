@@ -66,15 +66,13 @@ minikube start --extra-config=apiserver.authorization-mode=RBAC \
 ```
 
 
-TODO: use namespaces groups and email with rule!!!
-
 The next step is to create groups. For this example we already have two groups on the Auth0 side: `cluster-admin` and `cluster-view`. To make these groups in Kubernetes, run the following:
-- `kubectl create clusterrolebinding platform-cluster-view --clusterrole=view --group=platform-cluster-view`
-- `kubectl create clusterrolebinding platform-cluster-admin --clusterrole=cluster-admin --group=platform-cluster-admin`
+- `kubectl create clusterrolebinding auth0-cluster-view --clusterrole=view --group=minikube-cluster-view`
+- `kubectl create clusterrolebinding auth0-cluster-admin --clusterrole=cluster-admin --group=minikube-cluster-admin`
 Note that we added `minikube-` to the beginning of the `--group`. As mentioned above, Kubernetes will automatically prepend `minikube-` to the group name from the token (`cluster-admin` becomes `minikube-cluster-admin`) and then matches that group against the groups already in Kubernetes.
 
 ## Kube Config Setup
-Now that we have the Auth0 and Kubernetes pieces set up, lets setup your Kube config. k8s-pixy-auth makes it really easy to get things set up with one command. Run the following and make sure your add in the variables you need instead of the example ones: `k8s-pixy-auth init --context-name "minikube" --issuer-endpoint "https://joncarl.auth0.com" --audience "minikube" --client-id "QXV0aDAgaXMgaGlyaW5nISBhdXRoMC5jb20vY2FyZWVycyAK"`. If you want to see what happened in your kube config you should find that the context you passed into the init command has a new user aith `-exec-auth` on the end. If you find the user in the file is should be setup similar to the following:
+Now that we have the Auth0 and Kubernetes pieces set up, lets setup your Kube config. k8s-pixy-auth makes it really easy to get things set up with one command. Run the following and make sure your add in the variables you need instead of the example ones: `k8s-pixy-auth init --context-name "minikube" --issuer-endpoint "https://joncarl.auth0.com" --audience "minikube" --client-id "QXV0aDAgaXMgaGlyaW5nISBhdXRoMC5jb20vY2FyZWVycyAK"`. If you want to see what happened in your kube config you should find that the context you passed into the init command has a new user with `-exec-auth` on the end. If you find the user in the file is should be setup similar to the following:
 ```yaml
 - name: minikube-exec-auth
   user:
