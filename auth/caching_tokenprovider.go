@@ -12,7 +12,7 @@ type cachingProvider interface {
 	CacheTokens(*TokenResult) error
 }
 
-type tokenProvider interface {
+type issuerTokenProvider interface {
 	FromRefreshToken(refreshToken string) (*TokenResult, error)
 	Authenticate() (*TokenResult, error)
 }
@@ -21,36 +21,58 @@ type tokenProvider interface {
 // token provider that uses a cache to store tokens
 type CachingTokenProvider struct {
 	cache               cachingProvider
-	accessTokenProvider tokenProvider
+	issuerTokenProvider issuerTokenProvider
 }
 
 // NewCachingTokenProvider builds a new CachingTokenProvider using the passed
 // in interface satisfiers
-func NewCachingTokenProvider(cache cachingProvider, accessTokenProvider tokenProvider) *CachingTokenProvider {
+func NewCachingTokenProvider(cache cachingProvider, issuerTokenProvider issuerTokenProvider) *CachingTokenProvider {
 	return &CachingTokenProvider{
 		cache:               cache,
-		accessTokenProvider: accessTokenProvider,
+		issuerTokenProvider: issuerTokenProvider,
 	}
 }
 
-// GetAccessToken returns an access token using the cache and falls back to an
-// access token provider if the cache is empty
-func (c *CachingTokenProvider) GetAccessToken() (string, error) {
-	tokenResult, err := c.refreshFromCache()
+func (c *CachingTokenProvider) getTokenResult(shouldRefresh func(TokenResult) bool) (*TokenResult, error) {
+	tokenResult, err := c.refreshFromCache(shouldRefresh)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if tokenResult == nil {
-		tokenResult, err = c.accessTokenProvider.Authenticate()
+		tokenResult, err = c.issuerTokenProvider.Authenticate()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
 	err = c.cache.CacheTokens(tokenResult)
 	if err != nil {
-		return "", errors.Wrap(err, "could not cache tokens")
+		return nil, errors.Wrap(err, "could not cache tokens")
+	}
+
+	return tokenResult, nil
+}
+
+// GetIDToken returns an id token using the cache and falls back to an
+// issuer token provider if the cache is empty
+func (c *CachingTokenProvider) GetIDToken() (string, error) {
+	isIDTokenValid := func(tokenResult TokenResult) bool { return isValidToken(tokenResult.IDToken) }
+	tokenResult, err := c.getTokenResult(isIDTokenValid)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenResult.IDToken, nil
+}
+
+// GetAccessToken returns an access token using the cache and falls back to an
+// issuer token provider if the cache is empty
+func (c *CachingTokenProvider) GetAccessToken() (string, error) {
+	isAccessTokenValid := func(tokenResult TokenResult) bool { return isValidToken(tokenResult.AccessToken) }
+	tokenResult, err := c.getTokenResult(isAccessTokenValid)
+	if err != nil {
+		return "", err
 	}
 
 	return tokenResult.AccessToken, nil
@@ -58,7 +80,7 @@ func (c *CachingTokenProvider) GetAccessToken() (string, error) {
 
 func (c *CachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult {
 	// TODO: log the refreshErr somewhere
-	tokenResult, refreshErr := c.accessTokenProvider.FromRefreshToken(refreshToken)
+	tokenResult, refreshErr := c.issuerTokenProvider.FromRefreshToken(refreshToken)
 	if refreshErr != nil {
 		return nil
 	}
@@ -68,7 +90,7 @@ func (c *CachingTokenProvider) getRefreshToken(refreshToken string) *TokenResult
 	return tokenResult
 }
 
-func (c *CachingTokenProvider) refreshFromCache() (*TokenResult, error) {
+func (c *CachingTokenProvider) refreshFromCache(isTokenValid func(TokenResult) bool) (*TokenResult, error) {
 	tokenResult, err := c.cache.GetTokens()
 	if err != nil {
 		return nil, errors.Wrap(err, "could get tokens from the cache")
@@ -78,9 +100,13 @@ func (c *CachingTokenProvider) refreshFromCache() (*TokenResult, error) {
 		return nil, nil
 	}
 
-	if isValidToken(tokenResult.AccessToken) {
+	if isTokenValid(*tokenResult) {
 		return tokenResult, nil
 	}
+
+	// if isValidToken(tokenResult.AccessToken) {
+	// 	return tokenResult, nil
+	// }
 
 	if tokenResult.RefreshToken == "" {
 		return nil, nil

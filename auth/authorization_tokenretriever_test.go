@@ -13,9 +13,7 @@ import (
 var _ = Describe("CodetokenExchanger", func() {
 	Describe("newExchangeCodeRequest", func() {
 		It("creates the request", func() {
-			tokenRetriever := TokenRetriever{
-				baseURL: "https://issuer",
-			}
+			tokenRetriever := TokenRetriever{oidcWellKnownEndpoints: OIDCWellKnownEndpoints{TokenEndpoint: "https://issuer/oauth/token"}}
 			exchangeRequest := AuthorizationCodeExchangeRequest{
 				ClientID:     "clientID",
 				CodeVerifier: "Verifier",
@@ -40,9 +38,7 @@ var _ = Describe("CodetokenExchanger", func() {
 		})
 
 		It("returns an error when NewRequest returns an error", func() {
-			tokenRetriever := TokenRetriever{
-				baseURL: "://issuer",
-			}
+			tokenRetriever := TokenRetriever{oidcWellKnownEndpoints: OIDCWellKnownEndpoints{TokenEndpoint: "://issuer/oauth/token"}}
 
 			result, err := tokenRetriever.newExchangeCodeRequest(AuthorizationCodeExchangeRequest{})
 
@@ -92,9 +88,7 @@ var _ = Describe("CodetokenExchanger", func() {
 
 	Describe("newRefreshTokenRequest", func() {
 		It("creates the request", func() {
-			tokenRetriever := TokenRetriever{
-				baseURL: "https://issuer",
-			}
+			tokenRetriever := TokenRetriever{oidcWellKnownEndpoints: OIDCWellKnownEndpoints{TokenEndpoint: "https://issuer/oauth/token"}}
 			exchangeRequest := RefreshTokenExchangeRequest{
 				ClientID:     "clientID",
 				RefreshToken: "refreshToken",
@@ -115,9 +109,7 @@ var _ = Describe("CodetokenExchanger", func() {
 		})
 
 		It("returns an error when NewRequest returns an error", func() {
-			tokenRetriever := TokenRetriever{
-				baseURL: "://issuer",
-			}
+			tokenRetriever := TokenRetriever{oidcWellKnownEndpoints: OIDCWellKnownEndpoints{TokenEndpoint: "://issuer/oauth/token"}}
 
 			result, err := tokenRetriever.newRefreshTokenRequest(RefreshTokenExchangeRequest{})
 

@@ -79,6 +79,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewLocalhostCodeProvider(
 			issuerData,
+			OIDCWellKnownEndpoints{},
 			mockListener,
 			&mockInteractor{},
 			mockState,
@@ -95,6 +96,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewLocalhostCodeProvider(
 			issuerData,
+			OIDCWellKnownEndpoints{},
 			mockListener,
 			&mockInteractor{},
 			mockState,
@@ -111,6 +113,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		mockOSInteractor := &mockInteractor{}
 		provider := NewLocalhostCodeProvider(
 			issuerData,
+			OIDCWellKnownEndpoints{AuthorizationEndpoint: "https://issuer/the/authorize/endpoint"},
 			mockListener,
 			mockOSInteractor,
 			mockState,
@@ -118,7 +121,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 		go mockListener.CompleteCallback(CallbackResponse{})
 
-		provider.GetCode(challenge)
+		provider.GetCode(challenge, "scope1", "scope2", "scope3")
 
 		parsedURL, err := url.Parse(mockOSInteractor.URL)
 
@@ -130,7 +133,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		Expect(len(params)).To(Equal(8))
 		Expect(params.Get("state")).To(Equal(stateResult))
 		Expect(params.Get("audience")).To(Equal(issuerData.Audience))
-		Expect(params.Get("scope")).To(Equal("openid offline_access email"))
+		Expect(params.Get("scope")).To(Equal("openid email scope1 scope2 scope3"))
 		Expect(params.Get("response_type")).To(Equal("code"))
 		Expect(params.Get("client_id")).To(Equal(issuerData.ClientID))
 		Expect(params.Get("code_challenge")).To(Equal(challenge.Code))
@@ -142,6 +145,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewLocalhostCodeProvider(
 			issuerData,
+			OIDCWellKnownEndpoints{},
 			mockListener,
 			&mockInteractor{},
 			mockState,
@@ -159,6 +163,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewLocalhostCodeProvider(
 			issuerData,
+			OIDCWellKnownEndpoints{},
 			mockListener,
 			&mockInteractor{
 				ReturnsError: errors.New("someerror"),
@@ -175,6 +180,7 @@ var _ = Describe("AuthCodeProvider", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewLocalhostCodeProvider(
 			issuerData,
+			OIDCWellKnownEndpoints{},
 			mockListener,
 			&mockInteractor{},
 			mockState,

@@ -8,15 +8,17 @@ import (
 )
 
 type MockCodeProvider struct {
-	Called              bool
-	CalledWithChallenge Challenge
-	AuthCodeResult      *AuthorizationCodeResult
-	ReturnsError        error
+	Called                     bool
+	CalledWithChallenge        Challenge
+	CalledWithAdditionalScopes []string
+	AuthCodeResult             *AuthorizationCodeResult
+	ReturnsError               error
 }
 
-func (cp *MockCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
+func (cp *MockCodeProvider) GetCode(challenge Challenge, additionalScopes ...string) (*AuthorizationCodeResult, error) {
 	cp.Called = true
 	cp.CalledWithChallenge = challenge
+	cp.CalledWithAdditionalScopes = additionalScopes
 	return cp.AuthCodeResult, cp.ReturnsError
 }
 
@@ -74,6 +76,7 @@ var _ = Describe("AccessTokenProvider", func() {
 
 		It("invokes TokenExchanger with returned code", func() {
 			provider := NewAccessTokenProvider(
+				false,
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -89,10 +92,33 @@ var _ = Describe("AccessTokenProvider", func() {
 				Code:         "1234",
 				RedirectURI:  "http://callback",
 			}))
+			Expect(len(mockCodeProvider.CalledWithAdditionalScopes)).To(Equal(0))
+		})
+
+		It("sends the offline_access scope when refresh tokens are wanted", func() {
+			provider := NewAccessTokenProvider(
+				true,
+				issuer,
+				mockCodeProvider,
+				mockTokenExchanger,
+				mockChallenger,
+			)
+
+			_, _ = provider.Authenticate()
+			Expect(mockCodeProvider.Called).To(BeTrue())
+			Expect(mockCodeProvider.CalledWithChallenge).To(Equal(challengeResult))
+			Expect(mockTokenExchanger.CalledWithRequest).To(Equal(&AuthorizationCodeExchangeRequest{
+				ClientID:     issuer.ClientID,
+				CodeVerifier: challengeResult.Verifier,
+				Code:         "1234",
+				RedirectURI:  "http://callback",
+			}))
+			Expect(mockCodeProvider.CalledWithAdditionalScopes).To(Equal([]string{"offline_access"}))
 		})
 
 		It("returns TokensResult from TokenExchanger", func() {
 			provider := NewAccessTokenProvider(
+				false,
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -108,6 +134,7 @@ var _ = Describe("AccessTokenProvider", func() {
 			mockCodeProvider.ReturnsError = errors.New("someerror")
 
 			provider := NewAccessTokenProvider(
+				false,
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -124,6 +151,7 @@ var _ = Describe("AccessTokenProvider", func() {
 			mockTokenExchanger.ReturnsTokens = nil
 
 			provider := NewAccessTokenProvider(
+				false,
 				issuer,
 				mockCodeProvider,
 				mockTokenExchanger,
@@ -132,20 +160,26 @@ var _ = Describe("AccessTokenProvider", func() {
 
 			_, err := provider.Authenticate()
 
-			Expect(err.Error()).To(Equal("someerror"))
+			Expect(err.Error()).To(Equal("could not exchange code: someerror"))
 		})
 	})
 
 	Describe("ExchangeRefreshToken", func() {
-		mockTokenExchanger := &MockTokenExchanger{
-			ReturnsTokens: &TokenResult{},
-		}
-		provider := NewAccessTokenProvider(
-			issuer,
-			nil,
-			mockTokenExchanger,
-			nil,
-		)
+		var mockTokenExchanger *MockTokenExchanger
+		var provider *TokenProvider
+
+		BeforeEach(func() {
+			mockTokenExchanger = &MockTokenExchanger{
+				ReturnsTokens: &TokenResult{},
+			}
+			provider = NewAccessTokenProvider(
+				true,
+				issuer,
+				nil,
+				mockTokenExchanger,
+				nil,
+			)
+		})
 
 		It("returns the refreshed access token from the TokenExchanger", func() {
 			mockTokenExchanger.ReturnsTokens = &TokenResult{
@@ -169,6 +203,15 @@ var _ = Describe("AccessTokenProvider", func() {
 
 			Expect(accessToken).To(BeNil())
 			Expect(err.Error()).To(Equal("someerror"))
+		})
+
+		It("returns an error when refresh tokens are not allowed", func() {
+			provider.allowRefresh = false
+
+			accessToken, err := provider.FromRefreshToken("yay")
+
+			Expect(accessToken).To(BeNil())
+			Expect(err.Error()).To(Equal("cannot use refresh token as it was not allowed to be used by the client"))
 		})
 	})
 })

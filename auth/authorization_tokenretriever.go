@@ -10,8 +10,8 @@ import (
 // TokenRetriever implements AuthTokenExchanger in order to facilitate getting
 // Tokens
 type TokenRetriever struct {
-	baseURL   string
-	transport HTTPAuthTransport
+	oidcWellKnownEndpoints OIDCWellKnownEndpoints
+	transport              HTTPAuthTransport
 }
 
 // AuthorizationTokenResponse is the HTTP response when asking for a new token.
@@ -65,11 +65,11 @@ type HTTPAuthTransport interface {
 }
 
 // NewTokenRetriever allows a TokenRetriever the internal of a new
-// TokenTreriever to be easily set up
-func NewTokenRetriever(baseURL string, authTransport HTTPAuthTransport) *TokenRetriever {
+// TokenRetriever to be easily set up
+func NewTokenRetriever(oidcWellKnownEndpoints OIDCWellKnownEndpoints, authTransport HTTPAuthTransport) *TokenRetriever {
 	return &TokenRetriever{
-		baseURL:   baseURL,
-		transport: authTransport,
+		oidcWellKnownEndpoints: oidcWellKnownEndpoints,
+		transport:              authTransport,
 	}
 }
 
@@ -88,7 +88,7 @@ func (ce *TokenRetriever) newExchangeCodeRequest(req AuthorizationCodeExchangeRe
 	json.NewEncoder(bodyReader).Encode(body)
 
 	request, err := http.NewRequest("POST",
-		fmt.Sprintf("%s/oauth/token", ce.baseURL),
+		ce.oidcWellKnownEndpoints.TokenEndpoint,
 		bodyReader,
 	)
 	if err != nil {
@@ -113,7 +113,7 @@ func (ce *TokenRetriever) newRefreshTokenRequest(req RefreshTokenExchangeRequest
 	json.NewEncoder(bodyReader).Encode(body)
 
 	request, err := http.NewRequest("POST",
-		fmt.Sprintf("%s/oauth/token", ce.baseURL),
+		ce.oidcWellKnownEndpoints.TokenEndpoint,
 		bodyReader,
 	)
 	if err != nil {
@@ -158,6 +158,7 @@ func (ce *TokenRetriever) handleAuthTokensResponse(resp *http.Response) (*TokenR
 
 	return &TokenResult{
 		AccessToken:  atr.AccessToken,
+		IDToken:      atr.IDToken,
 		RefreshToken: atr.RefreshToken,
 		ExpiresIn:    atr.ExpiresIn,
 	}, nil

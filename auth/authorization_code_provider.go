@@ -1,14 +1,18 @@
 package auth
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // LocalhostCodeProvider holds the information needed to easily get an
 // authorization code
 type LocalhostCodeProvider struct {
 	Issuer
-	listener     AuthorizationCallbackListener
-	osInteractor OSInteractor
-	state        State
+	oidcWellKnownEndpoints OIDCWellKnownEndpoints
+	listener               AuthorizationCallbackListener
+	osInteractor           OSInteractor
+	state                  State
 }
 
 // AuthorizationCodeResult holds the needed code and redirect URI needed to exchange a
@@ -40,11 +44,13 @@ type OSInteractor interface {
 // NewLocalhostCodeProvider allows for the easy setup of LocalhostCodeProvider
 func NewLocalhostCodeProvider(
 	issuer Issuer,
+	oidcWellKnownEndpoints OIDCWellKnownEndpoints,
 	callbackListener AuthorizationCallbackListener,
 	osInteractor OSInteractor,
 	state State) *LocalhostCodeProvider {
 	return &LocalhostCodeProvider{
 		issuer,
+		oidcWellKnownEndpoints,
 		callbackListener,
 		osInteractor,
 		state,
@@ -52,17 +58,20 @@ func NewLocalhostCodeProvider(
 }
 
 // GetCode opens a URL to authenticate and authorize a user and then returns
-// the authorization code that is sent to the callback
-func (cp *LocalhostCodeProvider) GetCode(challenge Challenge) (*AuthorizationCodeResult, error) {
+// the authorization code that is sent to the callback. Additional scopes
+// beyond openid and email can be sent by passing in arguments for
+// <additionalScopes>.
+func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, additionalScopes ...string) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
 	state := cp.state()
 	go cp.listener.AwaitResponse(codeReceiverCh, state)
 
 	if err := cp.osInteractor.OpenURL(fmt.Sprintf(
-		"%s/authorize?audience=%s&scope=openid offline_access email&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&state=%s",
-		cp.IssuerEndpoint,
+		"%s?audience=%s&scope=%s&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&state=%s",
+		cp.oidcWellKnownEndpoints.AuthorizationEndpoint,
 		cp.Audience,
+		strings.Join(append([]string{"openid", "email"}, additionalScopes...), " "),
 		cp.ClientID,
 		challenge.Code,
 		challenge.Method,

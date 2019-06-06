@@ -4,11 +4,13 @@ import (
 	"net/http"
 
 	"github.com/auth0/k8s-pixy-auth/os"
+	"github.com/pkg/errors"
 )
 
-// AccessTokenProvider takes care of the mechanics needed for getting an access
+// TokenProvider takes care of the mechanics needed for getting an access
 // Token
-type AccessTokenProvider struct {
+type TokenProvider struct {
+	allowRefresh bool
 	issuerData   Issuer
 	codeProvider AuthorizationCodeProvider
 	exchanger    AuthorizationTokenExchanger
@@ -17,7 +19,7 @@ type AccessTokenProvider struct {
 
 // AuthorizationCodeProvider abstracts getting an authorization code
 type AuthorizationCodeProvider interface {
-	GetCode(challenge Challenge) (*AuthorizationCodeResult, error)
+	GetCode(challenge Challenge, additionalScopes ...string) (*AuthorizationCodeResult, error)
 }
 
 // AuthorizationTokenExchanger abstracts exchanging for tokens
@@ -29,6 +31,7 @@ type AuthorizationTokenExchanger interface {
 // TokenResult holds token information
 type TokenResult struct {
 	AccessToken  string `json:"access_token"`
+	IDToken      string `json:"id_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
 }
@@ -42,11 +45,13 @@ type Issuer struct {
 
 // NewAccessTokenProvider allows for the easy setup AccessTokenProvider
 func NewAccessTokenProvider(
+	allowRefresh bool,
 	issuerData Issuer,
 	codeProvider AuthorizationCodeProvider,
 	exchanger AuthorizationTokenExchanger,
-	challenger Challenger) *AccessTokenProvider {
-	return &AccessTokenProvider{
+	challenger Challenger) *TokenProvider {
+	return &TokenProvider{
+		allowRefresh: allowRefresh,
 		issuerData:   issuerData,
 		codeProvider: codeProvider,
 		exchanger:    exchanger,
@@ -54,33 +59,46 @@ func NewAccessTokenProvider(
 	}
 }
 
-// NewDefaultAccessTokenProvider provides an easy way to build up a default token provider with
-// all the correct configuration.
-func NewDefaultAccessTokenProvider(issuerData Issuer) *AccessTokenProvider {
+// NewDefaultAccessTokenProvider provides an easy way to build up a default
+// token provider with all the correct configuration. If refresh tokens should
+// be allowed pass in true for <allowRefresh>
+func NewDefaultAccessTokenProvider(issuerData Issuer, allowRefresh bool) (*TokenProvider, error) {
+	wellKnownEndpoints, err := GetOIDCWellKnownEndpointsFromIssuerURL(issuerData.IssuerEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	codeProvider := NewLocalhostCodeProvider(
 		issuerData,
+		*wellKnownEndpoints,
 		NewLocalhostCallbackListener(8080),
 		&os.DefaultInteractor{},
 		DefaultStateGenerator,
 	)
 
 	tokenRetriever := NewTokenRetriever(
-		issuerData.IssuerEndpoint,
+		*wellKnownEndpoints,
 		&http.Client{})
 
 	return NewAccessTokenProvider(
+		allowRefresh,
 		issuerData,
 		codeProvider,
 		tokenRetriever,
-		DefaultChallengeGenerator)
+		DefaultChallengeGenerator), nil
 }
 
 // Authenticate is used to retrieve a TokenResult when the user has not yet
 // authenticated
-func (p *AccessTokenProvider) Authenticate() (*TokenResult, error) {
+func (p *TokenProvider) Authenticate() (*TokenResult, error) {
 	challenge := p.challenger()
-	codeResult, err := p.codeProvider.GetCode(challenge)
 
+	var additionalScopes []string
+	if p.allowRefresh {
+		additionalScopes = append(additionalScopes, "offline_access")
+	}
+
+	codeResult, err := p.codeProvider.GetCode(challenge, additionalScopes...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +112,7 @@ func (p *AccessTokenProvider) Authenticate() (*TokenResult, error) {
 
 	tokenResult, err := p.exchanger.ExchangeCode(exchangeRequest)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not exchange code")
 	}
 
 	return tokenResult, nil
@@ -102,7 +120,11 @@ func (p *AccessTokenProvider) Authenticate() (*TokenResult, error) {
 
 // FromRefreshToken is used to retrieve a TokenResult when the user has already
 // authenticated but their Access Token has expired
-func (p *AccessTokenProvider) FromRefreshToken(refreshToken string) (*TokenResult, error) {
+func (p *TokenProvider) FromRefreshToken(refreshToken string) (*TokenResult, error) {
+	if !p.allowRefresh {
+		return nil, errors.New("cannot use refresh token as it was not allowed to be used by the client")
+	}
+
 	exchangeRequest := RefreshTokenExchangeRequest{
 		ClientID:     p.issuerData.ClientID,
 		RefreshToken: refreshToken,

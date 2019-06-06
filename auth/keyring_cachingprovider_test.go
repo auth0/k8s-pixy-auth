@@ -119,13 +119,14 @@ var _ = Describe("keyringCachingProvider", func() {
 
 		err := p.CacheTokens(&TokenResult{
 			AccessToken:  "asdf",
+			IDToken:      "mnbv",
 			RefreshToken: "lkjh",
 		})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(k.SetCalledWith).To(Equal(keyring.Item{
 			Key:  p.identifier,
-			Data: []byte(`{"access_token":"asdf","refresh_token":"lkjh","expires_in":0}`),
+			Data: []byte(`{"access_token":"asdf","id_token":"mnbv","refresh_token":"lkjh","expires_in":0}`),
 		}))
 	})
 
@@ -159,6 +160,7 @@ var _ = Describe("keyringCachingProvider", func() {
 
 		err := p.CacheTokens(&TokenResult{
 			AccessToken:  "asdf",
+			IDToken:      "mnbv",
 			RefreshToken: "lkjh",
 		})
 
@@ -166,7 +168,7 @@ var _ = Describe("keyringCachingProvider", func() {
 		Expect(err.Error()).To(Equal("error setting token information in keyring: uh oh"))
 		Expect(k.SetCalledWith).To(Equal(keyring.Item{
 			Key:  p.identifier,
-			Data: []byte(`{"access_token":"asdf","refresh_token":"lkjh","expires_in":0}`),
+			Data: []byte(`{"access_token":"asdf","id_token":"mnbv","refresh_token":"lkjh","expires_in":0}`),
 		}))
 	})
 })

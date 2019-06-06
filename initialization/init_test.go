@@ -89,13 +89,13 @@ var _ = Describe("init", func() {
 	})
 
 	It("loads the current kube config", func() {
-		i.UpdateKubeConfig("", "", auth.Issuer{})
+		i.UpdateKubeConfig("", "", auth.Issuer{}, false, false)
 
 		Expect(kubeConfigInteractor.LoadConfigCalled).To(BeTrue())
 	})
 
 	It("creates the context when the context does not exist", func() {
-		i.UpdateKubeConfig("context-name", "", auth.Issuer{})
+		i.UpdateKubeConfig("context-name", "", auth.Issuer{}, false, false)
 
 		Expect(kubeConfigInteractor.SavedConfig.Contexts["context-name"].AuthInfo).To(Equal("context-name-exec-auth"))
 		Expect(kubeConfigInteractor.SavedConfig.Contexts["context-name"].Cluster).To(BeEmpty())
@@ -110,7 +110,7 @@ var _ = Describe("init", func() {
 				},
 			},
 		}
-		i.UpdateKubeConfig("context-name", "", auth.Issuer{})
+		i.UpdateKubeConfig("context-name", "", auth.Issuer{}, false, false)
 
 		Expect(kubeConfigInteractor.SavedConfig.Contexts["context-name"].AuthInfo).To(Equal("context-name-exec-auth"))
 		Expect(kubeConfigInteractor.SavedConfig.Contexts["context-name"].Cluster).To(Equal("cluster"))
@@ -118,7 +118,7 @@ var _ = Describe("init", func() {
 
 	It("adds the issuer information as arguments", func() {
 		issuer := auth.Issuer{IssuerEndpoint: "issuer", ClientID: "client-id", Audience: "audience"}
-		i.UpdateKubeConfig("context-name", "", issuer)
+		i.UpdateKubeConfig("context-name", "", issuer, false, false)
 
 		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.Args).To(Equal([]string{
 			"auth",
@@ -127,14 +127,36 @@ var _ = Describe("init", func() {
 			fmt.Sprintf("--audience=%s", issuer.Audience)}))
 	})
 
+	It("adds the use id token argument when using the id token", func() {
+		i.UpdateKubeConfig("context-name", "", auth.Issuer{}, true, false)
+
+		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.Args).To(Equal([]string{
+			"auth",
+			"--issuer-endpoint=",
+			"--client-id=",
+			"--audience=",
+			"--use-id-token"}))
+	})
+
+	It("adds the with refresh token argument when wanting to use the refresh token", func() {
+		i.UpdateKubeConfig("context-name", "", auth.Issuer{}, false, true)
+
+		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.Args).To(Equal([]string{
+			"auth",
+			"--issuer-endpoint=",
+			"--client-id=",
+			"--audience=",
+			"--with-refresh-token"}))
+	})
+
 	It("adds the binary location", func() {
-		i.UpdateKubeConfig("context-name", "binary-location", auth.Issuer{})
+		i.UpdateKubeConfig("context-name", "binary-location", auth.Issuer{}, false, false)
 
 		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.Command).To(Equal("binary-location"))
 	})
 
 	It("adds the correct API version", func() {
-		i.UpdateKubeConfig("context-name", "", auth.Issuer{})
+		i.UpdateKubeConfig("context-name", "", auth.Issuer{}, false, false)
 
 		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name-exec-auth"].Exec.APIVersion).To(Equal("client.authentication.k8s.io/v1beta1"))
 	})
@@ -150,21 +172,21 @@ var _ = Describe("init", func() {
 			},
 		}
 
-		i.UpdateKubeConfig("context-name", "", auth.Issuer{})
+		i.UpdateKubeConfig("context-name", "", auth.Issuer{}, false, false)
 
 		Expect(kubeConfigInteractor.SavedConfig.AuthInfos["context-name"]).To(Equal(contextAuth))
 	})
 
 	It("returns any errors from loading a config", func() {
 		kubeConfigInteractor.ReturnLoadError = errors.New("someerror")
-		err := i.UpdateKubeConfig("", "", auth.Issuer{})
+		err := i.UpdateKubeConfig("", "", auth.Issuer{}, false, false)
 
 		Expect(err.Error()).To(Equal("Error loading kube config: someerror"))
 	})
 
 	It("returns any errors from saving a config", func() {
 		kubeConfigInteractor.ReturnSaveError = errors.New("someerror")
-		err := i.UpdateKubeConfig("", "", auth.Issuer{})
+		err := i.UpdateKubeConfig("", "", auth.Issuer{}, false, false)
 
 		Expect(err.Error()).To(Equal("Error saving kube config: someerror"))
 	})

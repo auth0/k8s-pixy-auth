@@ -10,6 +10,8 @@ import (
 var issuerEndpoint string
 var clientID string
 var audience string
+var useIDToken bool
+var withRefreshToken bool
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&issuerEndpoint, "issuer-endpoint", "i", "", "the issuer endpoint")
@@ -18,6 +20,8 @@ func init() {
 	rootCmd.MarkFlagRequired("client-id")
 	rootCmd.PersistentFlags().StringVarP(&audience, "audience", "a", "", "the audience")
 	rootCmd.MarkFlagRequired("audience")
+	rootCmd.PersistentFlags().BoolVar(&useIDToken, "use-id-token", false, "if the id token should be used instead of the access token")
+	rootCmd.PersistentFlags().BoolVar(&withRefreshToken, "with-refresh-token", false, "if the refresh token should be used / requested")
 }
 
 var rootCmd = &cobra.Command{
