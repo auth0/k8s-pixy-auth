@@ -2,13 +2,16 @@ module github.com/auth0/k8s-pixy-auth
 
 require (
 	github.com/99designs/keyring v0.0.0-20190110203331-82da6802f65f
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0 // indirect
+	github.com/danieljoos/wincred v1.0.2 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dvsekhvalnov/jose2go v0.0.0-20180829124132-7f401d37b68a // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
+	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/gogo/protobuf v1.1.1 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
+	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.5 // indirect
@@ -19,10 +22,9 @@ require (
 	github.com/onsi/ginkgo v1.6.0
 	github.com/onsi/gomega v1.4.2
 	github.com/pkg/errors v0.8.1
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3 // indirect
-	github.com/stretchr/testify v1.2.2 // indirect
+	github.com/stretchr/objx v0.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20181029212243-b078efbc8099
 	golang.org/x/net v0.0.0-20181029044818-c44066c5c816 // indirect
 	golang.org/x/oauth2 v0.0.0-20181017192945-9dcd33a902f4 // indirect
