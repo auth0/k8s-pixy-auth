@@ -104,10 +104,6 @@ func (c *CachingTokenProvider) refreshFromCache(isTokenValid func(TokenResult) b
 		return tokenResult, nil
 	}
 
-	// if isValidToken(tokenResult.AccessToken) {
-	// 	return tokenResult, nil
-	// }
-
 	if tokenResult.RefreshToken == "" {
 		return nil, nil
 	}
