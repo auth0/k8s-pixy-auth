@@ -20,6 +20,7 @@ func init() {
 
 type tokenProvider interface {
 	GetAccessToken() (string, error)
+	GetIDToken() (string, error)
 }
 
 var authCmd = &cobra.Command{
@@ -32,9 +33,18 @@ var authCmd = &cobra.Command{
 			return errors.Wrap(err, "could not set up keyring")
 		}
 
-		provider := newCachingTokenProviderUsingKeyring(issuerEndpoint, clientID, audience, k)
+		provider, err := newCachingTokenProviderUsingKeyring(issuerEndpoint, clientID, audience, withRefreshToken, k)
+		if err != nil {
+			return errors.Wrap(err, "could not build caching token provider")
+		}
 
-		accessToken, err := provider.GetAccessToken()
+		var token string
+		if useIDToken {
+			token, err = provider.GetIDToken()
+		} else {
+			token, err = provider.GetAccessToken()
+		}
+
 		if err != nil {
 			return errors.Wrap(err, "could not get access token for auth")
 		}
@@ -45,7 +55,7 @@ var authCmd = &cobra.Command{
 				APIVersion: "client.authentication.k8s.io/v1beta1",
 			},
 			Status: &v1beta1.ExecCredentialStatus{
-				Token: accessToken,
+				Token: token,
 			},
 		}
 
@@ -55,14 +65,19 @@ var authCmd = &cobra.Command{
 	},
 }
 
-func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, k keyring.Keyring) tokenProvider {
+func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, withRefreshToken bool, k keyring.Keyring) (tokenProvider, error) {
+	atProvider, err := auth.NewDefaultAccessTokenProvider(auth.Issuer{
+		IssuerEndpoint: issuer,
+		ClientID:       clientID,
+		Audience:       audience,
+	}, withRefreshToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not build access token provider")
+	}
+
 	return auth.NewCachingTokenProvider(
 		auth.NewKeyringCachingProvider(clientID, audience, k),
-		auth.NewDefaultAccessTokenProvider(auth.Issuer{
-			IssuerEndpoint: issuer,
-			ClientID:       clientID,
-			Audience:       audience,
-		}))
+		atProvider), nil
 }
 
 func getK8sKeyringSetup() (keyring.Keyring, error) {
