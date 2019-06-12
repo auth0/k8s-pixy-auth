@@ -7,7 +7,7 @@ COMMIT_SHA=$(shell git rev-parse HEAD)
 VERSION_TAG=$(shell git describe --abbrev=0 --tags)
 DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-LDFLAGS=-ldflags "-X $(PACKAGE_PATH)/cmd.commitSHA=$(COMMIT_SHA) -X $(PACKAGE_PATH)/cmd.version=$(VERSION_TAG) -X $(PACKAGE_PATH)/cmd.buildDate=$(DATE)"
+LDFLAGS=-ldflags '-s -w -X $(PACKAGE_PATH)/cmd.commitSHA=$(COMMIT_SHA) -X $(PACKAGE_PATH)/cmd.version=$(VERSION_TAG) -X $(PACKAGE_PATH)/cmd.buildDate=$(DATE)'
 
 BINARY=k8s-pixy-auth
 
@@ -37,8 +37,10 @@ cover:
 
 .PHONY: coveralls
 coveralls: cover
+	go get golang.org/x/tools/cmd/cover
 	go get github.com/mattn/goveralls
-	goveralls -coverprofile=cover.out -service=circle-ci -repotoken=$(COVERALLS_TOKEN)
+	go test -v -covermode=count -coverprofile=coverage.out
+	goveralls -coverprofile=cover.out -service=travis-ci -repotoken=$(COVERALLS_TOKEN)
 
 .PHONY: fmt
 fmt:
@@ -65,9 +67,9 @@ build-all-platforms: build-linux build-windows build-darwin
 
 .PHONY: install-tools
 install-tools:
-	go get -u golang.org/x/lint/golint
-	go get -u github.com/onsi/ginkgo/ginkgo
-	go get -u gotest.tools/gotestsum
+	go get golang.org/x/lint/golint@v0.0.0-20190409202823-959b441ac422
+	go get github.com/onsi/ginkgo/ginkgo@v1.8.0
+	go get gotest.tools/gotestsum@v0.3.4
 
 .PHONY: install-modules
 install-modules:
