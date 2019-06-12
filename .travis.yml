@@ -1,0 +1,35 @@
+language: go
+go:
+  - 1.12.x
+env:
+  global:
+    - GO111MODULE=on
+matrix:
+  include:
+    - os: linux
+      env: BUILD_FOR_OS=linux
+    - os: linux
+      env: BUILD_FOR_OS=windows
+    - os: osx
+      env: BUILD_FOR_OS=darwin
+install:
+  - make install-modules
+  - make install-tools
+script:
+  - make lint
+  - make test
+  - make coveralls
+  - make build-"$BUILD_FOR_OS"
+before_deploy:
+  - make package
+deploy:
+  provider: releases
+  api_key:
+    secure: NxqBJloF3+QBlQPH/9UP4LGqpTgzr4i1BZd2rdki3AaBFzYjbaQwN5oarhGD5IdehjPS34dI6qpZwTwnl5llAuV5R+o310j2lue4DOgYe9CRMmM1jUq0gEjsDEc7f/5qy3Nkl9sNqS5iPUNYy2A+bkZctrXEe+Pv02MkLkjntm+2TOeRXPmmZJgI5uG0c4c/C/he13F1D7qfQWEVRgzB+i5C4l3QV/CMkulQnPfQtnI/svTUhxRDk8oGVXh5NzXpFYIGK947fUpYTniLe1zdTn/36KxtzmtmaX/O1kAk06OSrshh41Zw3oiylGotB4U9UAMXfVgHxSo0nHMRNmK/4Ty5k2DTPDe91KdQgY4iHZ6T/VYHK6S7xP6rARzCHdM00FPkyytsJlOfh8y6lkqJlVqq6AjfQp19x6CMfvyCbsIwRqWasANTJ3899WtwyVRoL4tl4k3j5AFdsrJtn9RWtzmF5o+eqqsrStIjouEB7X9GfIbJu2YYIx4WzaEhS+64sUm6dbXfrtwG+vRLTudRsSFBZKWTTz5GPWyf6ValHPRkueQT6ZHHmzplnVPeizq+yIUTzXIaJWTf1EH3/KcOy7WN5v0k9EEAFnvdN8p9WwSK+tubCmyWSZ5cSEFUKWVCJiLCk8OfYgfg2TT5ugs0ZnyqV0lN6sSELDP7dPxKS4w=
+  file_glob: true
+  file: deploy/*
+  skip_cleanup: true
+  on:
+    repo: auth0/k8s-pixy-auth
+    branch: master
+    tags: true

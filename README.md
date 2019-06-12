@@ -1,4 +1,4 @@
-[![Build status][circleci-image]][circleci-url]
+[![Build status][travisci-image]][travisci-url]
 [![License][license-image]][license-url]
 [![Go Report Card][go-report-card-image]][go-report-card-url]
 [![Coverage Status][coveralls-image]][coveralls-url]
@@ -37,8 +37,8 @@ If you have found a bug or if you have a feature request, please report them at 
 
 This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
 
-[circleci-image]: https://img.shields.io/circleci/project/github/auth0/k8s-pixy-auth.svg
-[circleci-url]: https://circleci.com/gh/auth0/k8s-pixy-auth/tree/master
+[travisci-image]: https://travis-ci.org/auth0/k8s-pixy-auth.svg?branch=master
+[travisci-url]: https://travis-ci.org/auth0/k8s-pixy-auth
 [license-image]: https://img.shields.io/github/license/auth0/k8s-pixy-auth.svg
 [license-url]: #license
 [go-report-card-image]: https://goreportcard.com/badge/github.com/auth0/k8s-pixy-auth
