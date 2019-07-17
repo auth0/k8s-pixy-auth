@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -67,7 +68,7 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, additionalScopes .
 	state := cp.state()
 	go cp.listener.AwaitResponse(codeReceiverCh, state)
 
-	if err := cp.osInteractor.OpenURL(fmt.Sprintf(
+	authURL := fmt.Sprintf(
 		"%s?audience=%s&scope=%s&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&state=%s",
 		cp.oidcWellKnownEndpoints.AuthorizationEndpoint,
 		cp.Audience,
@@ -77,7 +78,11 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, additionalScopes .
 		challenge.Method,
 		cp.listener.GetCallbackURL(),
 		state,
-	)); err != nil {
+	)
+
+	fmt.Fprint(os.Stderr, fmt.Sprintf("Opening auth url in your default browser. If it does not open, please manually use the following URL:\n%s\n", authURL))
+
+	if err := cp.osInteractor.OpenURL(authURL); err != nil {
 		return nil, err
 	}
 
