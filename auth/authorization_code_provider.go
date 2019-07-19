@@ -80,7 +80,7 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, additionalScopes .
 		state,
 	)
 
-	fmt.Fprint(os.Stderr, fmt.Sprintf("Opening auth url in your default browser. If it does not open, please manually use the following URL:\n%s\n", authURL))
+	fmt.Fprint(os.Stderr, fmt.Sprintf("Opening the auth url in your default browser. If the browser does not open please manually navigate to the following URL:\n%s\n", authURL))
 
 	if err := cp.osInteractor.OpenURL(authURL); err != nil {
 		return nil, err

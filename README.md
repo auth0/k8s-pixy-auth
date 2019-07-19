@@ -11,7 +11,7 @@ A kubectl plugin to authenticate against an OIDC compatible issuer using [PKCE (
 As of Kubernetes v1.11 there is beta support for a [client-go credentials plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). Using the support it is possible to use an Auth0 application to authenticate users and provide tokens with which a correctly configured Kubernetes cluster can authorize user actions.
 
 ## Installation
-At this point in the project installation is manual. In the future this will be automated.
+At this point in the project installation is manual. In the future this will be automated. You will also need a correctly configured OIDC provider - you can find out how to do this using Auth0 by following the steps in [Auth0Setup.md](docs/Auth0Setup.md).
 1. Make sure your Kubernetes api service is [configured to use OpenID Connect Tokens](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
 2. Download a release binary or pull down this repo with `git clone git@github.com:auth0/k8s-pixy-auth.git`
 3. If you pulled down the repo, change to the cloned directory and build the binary with `go build`
