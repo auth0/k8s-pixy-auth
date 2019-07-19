@@ -70,7 +70,7 @@ func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, with
 		IssuerEndpoint: issuer,
 		ClientID:       clientID,
 		Audience:       audience,
-	}, withRefreshToken)
+	}, withRefreshToken, k8sTerminalLog)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not build access token provider")
 	}
@@ -105,4 +105,8 @@ func k8sTerminalPrompt(prompt string) (string, error) {
 	}
 
 	return pass, nil
+}
+
+func k8sTerminalLog(message string) {
+	fmt.Fprintf(os.Stderr, "%s\n", message)
 }

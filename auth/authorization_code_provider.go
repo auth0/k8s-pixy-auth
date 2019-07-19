@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -14,6 +13,7 @@ type LocalhostCodeProvider struct {
 	listener               AuthorizationCallbackListener
 	osInteractor           OSInteractor
 	state                  State
+	log                    LogFunc
 }
 
 // AuthorizationCodeResult holds the needed code and redirect URI needed to exchange a
@@ -48,13 +48,15 @@ func NewLocalhostCodeProvider(
 	oidcWellKnownEndpoints OIDCWellKnownEndpoints,
 	callbackListener AuthorizationCallbackListener,
 	osInteractor OSInteractor,
-	state State) *LocalhostCodeProvider {
+	state State,
+	log LogFunc) *LocalhostCodeProvider {
 	return &LocalhostCodeProvider{
 		issuer,
 		oidcWellKnownEndpoints,
 		callbackListener,
 		osInteractor,
 		state,
+		log,
 	}
 }
 
@@ -80,10 +82,11 @@ func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, additionalScopes .
 		state,
 	)
 
-	fmt.Fprint(os.Stderr, fmt.Sprintf("Opening the auth url in your default browser. If the browser does not open please manually navigate to the following URL:\n%s\n", authURL))
-
 	if err := cp.osInteractor.OpenURL(authURL); err != nil {
-		return nil, err
+		cp.log(fmt.Sprintf("Could not automatically open the default browser for user auth: %s", err.Error()))
+		cp.log(fmt.Sprintf("Please manually navigate to the following URL:\n\n%s", authURL))
+	} else {
+		cp.log(fmt.Sprintf("Opening the auth URL in your default browser. If the browser does not open please manually navigate to the following URL:\n\n%s", authURL))
 	}
 
 	callbackResult := <-codeReceiverCh

@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 // HTTPServer abstracts the functions needed for starting and shutting down an
 // HTTP server
 type HTTPServer interface {
-	Start(addr string)
+	Start()
 	Shutdown()
 }
 
@@ -24,12 +25,13 @@ type CallbackService struct {
 // callbackServer is an implementation of HTTPServer
 type callbackServer struct {
 	server *http.Server
+	port   int
 }
 
 // Start starts the HTTP server
-func (s *callbackServer) Start(addr string) {
+func (s *callbackServer) Start() {
 	s.server = &http.Server{
-		Addr: addr,
+		Addr: fmt.Sprintf(":%d", s.port),
 	}
 
 	go func() {
@@ -42,13 +44,15 @@ func (s *callbackServer) Start(addr string) {
 // Shutdown gracefully shuts down the HTTP server
 func (s *callbackServer) Shutdown() {
 	if err := s.server.Shutdown(context.Background()); err != nil {
+		fmt.Fprintf(os.Stderr, "HTTP server Shutdown error: %v\n", err)
+
 		log.Printf("HTTP server Shutdown error: %v", err)
 	}
 }
 
 // NewLocalhostCallbackListener creates a new CallbackService with a callbackServer
 func NewLocalhostCallbackListener(port int) *CallbackService {
-	return NewCallbackListener(fmt.Sprintf("localhost:%d", port), &callbackServer{})
+	return NewCallbackListener(fmt.Sprintf("localhost:%d", port), &callbackServer{port: port})
 }
 
 // NewCallbackListener creates a new CallbackService that uses the passed in
@@ -98,6 +102,6 @@ func (c *CallbackService) Close() {
 // AwaitResponse sets up the response channel to receive the code that comes in
 // the from authorizatino code callback handler
 func (c *CallbackService) AwaitResponse(response chan CallbackResponse, state string) {
-	c.httpServer.Start(c.addr)
+	c.httpServer.Start()
 	http.HandleFunc("/callback", c.BuildCodeResponseHandler(response, state))
 }

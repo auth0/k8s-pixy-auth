@@ -62,7 +62,7 @@ func NewAccessTokenProvider(
 // NewDefaultAccessTokenProvider provides an easy way to build up a default
 // token provider with all the correct configuration. If refresh tokens should
 // be allowed pass in true for <allowRefresh>
-func NewDefaultAccessTokenProvider(issuerData Issuer, allowRefresh bool) (*TokenProvider, error) {
+func NewDefaultAccessTokenProvider(issuerData Issuer, allowRefresh bool, logFunc LogFunc) (*TokenProvider, error) {
 	wellKnownEndpoints, err := GetOIDCWellKnownEndpointsFromIssuerURL(issuerData.IssuerEndpoint)
 	if err != nil {
 		return nil, err
@@ -74,6 +74,7 @@ func NewDefaultAccessTokenProvider(issuerData Issuer, allowRefresh bool) (*Token
 		NewLocalhostCallbackListener(8080),
 		&os.DefaultInteractor{},
 		DefaultStateGenerator,
+		logFunc,
 	)
 
 	tokenRetriever := NewTokenRetriever(

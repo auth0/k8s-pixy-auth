@@ -59,6 +59,14 @@ func (i *mockInteractor) OpenURL(url string) error {
 	return i.ReturnsError
 }
 
+type mockLog struct {
+	logged []string
+}
+
+func (m *mockLog) Log(info string) {
+	m.logged = append(m.logged, info)
+}
+
 var _ = Describe("AuthCodeProvider", func() {
 	issuerData := Issuer{
 		IssuerEndpoint: "https://issuer",
@@ -74,6 +82,11 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	stateResult := "randomstring1234"
 	mockState := func() string { return stateResult }
+	var mLog *mockLog
+
+	BeforeEach(func() {
+		mLog = &mockLog{}
+	})
 
 	It("waits for a response from the callback", func(done Done) {
 		mockListener := newMockCallbackListener()
@@ -83,6 +96,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			&mockInteractor{},
 			mockState,
+			mLog.Log,
 		)
 		go provider.GetCode(challenge)
 
@@ -100,6 +114,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			&mockInteractor{},
 			mockState,
+			mLog.Log,
 		)
 		go mockListener.CompleteCallback(CallbackResponse{})
 
@@ -117,6 +132,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			mockOSInteractor,
 			mockState,
+			mLog.Log,
 		)
 
 		go mockListener.CompleteCallback(CallbackResponse{})
@@ -149,6 +165,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			&mockInteractor{},
 			mockState,
+			mLog.Log,
 		)
 
 		go mockListener.CompleteCallback(CallbackResponse{Code: "mycode", Error: nil})
@@ -156,24 +173,51 @@ var _ = Describe("AuthCodeProvider", func() {
 		result, _ := provider.GetCode(challenge)
 		Expect(result.Code).To(Equal("mycode"))
 		Expect(result.RedirectURI).To(Equal(mockListener.GetCallbackURL()))
-
 	})
 
-	It("raises errors if command execution fails", func() {
+	It("displays a message about manually opening a browser in case the users browser does not open", func() {
 		mockListener := newMockCallbackListener()
 		provider := NewLocalhostCodeProvider(
 			issuerData,
-			OIDCWellKnownEndpoints{},
+			OIDCWellKnownEndpoints{AuthorizationEndpoint: "https://authorize/endpoint-1"},
+			mockListener,
+			&mockInteractor{},
+			mockState,
+			mLog.Log,
+		)
+
+		go mockListener.CompleteCallback(CallbackResponse{Code: "mycode-1", Error: nil})
+
+		result, err := provider.GetCode(challenge)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Code).To(Equal("mycode-1"))
+		Expect(mLog.logged).To(HaveLen(1))
+		Expect(mLog.logged[0]).To(Equal("Opening the auth URL in your default browser. If the browser does not open please manually navigate to the following URL:\n\nhttps://authorize/endpoint-1?audience=test_audience&scope=openid email&response_type=code&client_id=test_clientID&code_challenge=ABC123&code_challenge_method=SHA&redirect_uri=https://callback&state=randomstring1234"))
+	})
+
+	It("prompts to manually navigate to url if command execution fails", func() {
+		mockListener := newMockCallbackListener()
+		provider := NewLocalhostCodeProvider(
+			issuerData,
+			OIDCWellKnownEndpoints{AuthorizationEndpoint: "https://authorize/endpoint-2"},
 			mockListener,
 			&mockInteractor{
 				ReturnsError: errors.New("someerror"),
 			},
 			mockState,
+			mLog.Log,
 		)
 
-		_, err := provider.GetCode(challenge)
+		go mockListener.CompleteCallback(CallbackResponse{Code: "mycode-2", Error: nil})
 
-		Expect(err.Error()).To(Equal("someerror"))
+		result, err := provider.GetCode(challenge)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Code).To(Equal("mycode-2"))
+		Expect(mLog.logged).To(HaveLen(2))
+		Expect(mLog.logged[0]).To(Equal("Could not automatically open the default browser for user auth: someerror"))
+		Expect(mLog.logged[1]).To(Equal("Please manually navigate to the following URL:\n\nhttps://authorize/endpoint-2?audience=test_audience&scope=openid email&response_type=code&client_id=test_clientID&code_challenge=ABC123&code_challenge_method=SHA&redirect_uri=https://callback&state=randomstring1234"))
 	})
 
 	It("raises error if listener returns error", func() {
@@ -184,6 +228,7 @@ var _ = Describe("AuthCodeProvider", func() {
 			mockListener,
 			&mockInteractor{},
 			mockState,
+			mLog.Log,
 		)
 
 		go mockListener.CompleteCallback(CallbackResponse{

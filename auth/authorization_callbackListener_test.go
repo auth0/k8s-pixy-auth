@@ -13,7 +13,7 @@ type mockHTTPServer struct {
 	httpRecorder                *httptest.ResponseRecorder
 }
 
-func (s *mockHTTPServer) Start(addr string) {
+func (s *mockHTTPServer) Start() {
 	s.StartCalled = true
 }
 
