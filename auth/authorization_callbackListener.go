@@ -46,9 +46,10 @@ func (s *callbackServer) Shutdown() {
 	}
 }
 
-// NewLocalhostCallbackListener creates a new CallbackService with a callbackServer
-func NewLocalhostCallbackListener(port int) *CallbackService {
-	return NewCallbackListener(fmt.Sprintf("localhost:%d", port), &callbackServer{})
+// NewLocalCallbackListener creates a new CallbackService with a callbackServer
+// that listens on 127.0.0.1
+func NewLocalCallbackListener(port int) *CallbackService {
+	return NewCallbackListener(fmt.Sprintf("127.0.0.1:%d", port), &callbackServer{})
 }
 
 // NewCallbackListener creates a new CallbackService that uses the passed in

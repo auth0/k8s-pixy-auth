@@ -89,10 +89,10 @@ var _ = Describe("AuthCallbackService", func() {
 		Expect(<-resp).To(Equal(CallbackResponse{Error: errors.New("callback completed with no error or code")}))
 	})
 
-	It("sets up the callback server to listen on localhost", func() {
-		l := NewLocalhostCallbackListener(1573)
+	It("sets up the callback server to listen on 127.0.0.1", func() {
+		l := NewLocalCallbackListener(1573)
 
-		Expect(l.addr).To(Equal("localhost:1573"))
+		Expect(l.addr).To(Equal("127.0.0.1:1573"))
 	})
 
 	It("errors when the state parameter does not match", func() {
