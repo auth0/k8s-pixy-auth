@@ -68,10 +68,10 @@ func NewDefaultAccessTokenProvider(issuerData Issuer, allowRefresh bool) (*Token
 		return nil, err
 	}
 
-	codeProvider := NewLocalhostCodeProvider(
+	codeProvider := NewLocalCodeProvider(
 		issuerData,
 		*wellKnownEndpoints,
-		NewLocalhostCallbackListener(8080),
+		NewLocalCallbackListener(8080),
 		&os.DefaultInteractor{},
 		DefaultStateGenerator,
 	)

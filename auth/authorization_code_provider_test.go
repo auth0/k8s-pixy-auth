@@ -77,7 +77,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("waits for a response from the callback", func(done Done) {
 		mockListener := newMockCallbackListener()
-		provider := NewLocalhostCodeProvider(
+		provider := NewLocalCodeProvider(
 			issuerData,
 			OIDCWellKnownEndpoints{},
 			mockListener,
@@ -94,7 +94,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("closes the listener after receiving the code", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewLocalhostCodeProvider(
+		provider := NewLocalCodeProvider(
 			issuerData,
 			OIDCWellKnownEndpoints{},
 			mockListener,
@@ -111,7 +111,7 @@ var _ = Describe("AuthCodeProvider", func() {
 	It("opens the URL with expected auth params", func() {
 		mockListener := newMockCallbackListener()
 		mockOSInteractor := &mockInteractor{}
-		provider := NewLocalhostCodeProvider(
+		provider := NewLocalCodeProvider(
 			issuerData,
 			OIDCWellKnownEndpoints{AuthorizationEndpoint: "https://issuer/the/authorize/endpoint"},
 			mockListener,
@@ -143,7 +143,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("returns code provided by listener", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewLocalhostCodeProvider(
+		provider := NewLocalCodeProvider(
 			issuerData,
 			OIDCWellKnownEndpoints{},
 			mockListener,
@@ -161,7 +161,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("raises errors if command execution fails", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewLocalhostCodeProvider(
+		provider := NewLocalCodeProvider(
 			issuerData,
 			OIDCWellKnownEndpoints{},
 			mockListener,
@@ -178,7 +178,7 @@ var _ = Describe("AuthCodeProvider", func() {
 
 	It("raises error if listener returns error", func() {
 		mockListener := newMockCallbackListener()
-		provider := NewLocalhostCodeProvider(
+		provider := NewLocalCodeProvider(
 			issuerData,
 			OIDCWellKnownEndpoints{},
 			mockListener,

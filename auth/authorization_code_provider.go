@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// LocalhostCodeProvider holds the information needed to easily get an
-// authorization code
-type LocalhostCodeProvider struct {
+// LocalCodeProvider holds the information needed to easily get an
+// authorization code locally.
+type LocalCodeProvider struct {
 	Issuer
 	oidcWellKnownEndpoints OIDCWellKnownEndpoints
 	listener               AuthorizationCallbackListener
@@ -41,14 +41,14 @@ type OSInteractor interface {
 	OpenURL(url string) error
 }
 
-// NewLocalhostCodeProvider allows for the easy setup of LocalhostCodeProvider
-func NewLocalhostCodeProvider(
+// NewLocalCodeProvider allows for the easy setup of LocalCodeProvider
+func NewLocalCodeProvider(
 	issuer Issuer,
 	oidcWellKnownEndpoints OIDCWellKnownEndpoints,
 	callbackListener AuthorizationCallbackListener,
 	osInteractor OSInteractor,
-	state State) *LocalhostCodeProvider {
-	return &LocalhostCodeProvider{
+	state State) *LocalCodeProvider {
+	return &LocalCodeProvider{
 		issuer,
 		oidcWellKnownEndpoints,
 		callbackListener,
@@ -61,7 +61,7 @@ func NewLocalhostCodeProvider(
 // the authorization code that is sent to the callback. Additional scopes
 // beyond openid and email can be sent by passing in arguments for
 // <additionalScopes>.
-func (cp *LocalhostCodeProvider) GetCode(challenge Challenge, additionalScopes ...string) (*AuthorizationCodeResult, error) {
+func (cp *LocalCodeProvider) GetCode(challenge Challenge, additionalScopes ...string) (*AuthorizationCodeResult, error) {
 	codeReceiverCh := make(chan CallbackResponse)
 	defer close(codeReceiverCh)
 	state := cp.state()
