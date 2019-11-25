@@ -82,7 +82,7 @@ func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, with
 
 func getK8sKeyringSetup() (keyring.Keyring, error) {
 	return keyring.Open(keyring.Config{
-		ServiceName:              "k8s-pixy-auth",
+		ServiceName:              "K8sPixyAuth",
 		KeychainName:             "k8s-pixy-auth",
 		KeychainTrustApplication: true,
 		FilePasswordFunc:         k8sTerminalPrompt,
