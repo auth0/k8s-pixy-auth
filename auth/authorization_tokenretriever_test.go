@@ -23,18 +23,18 @@ var _ = Describe("CodetokenExchanger", func() {
 
 			result, err := tokenRetriever.newExchangeCodeRequest(exchangeRequest)
 
-			var tokenRequest AuthorizationTokenRequest
-			json.NewDecoder(result.Body).Decode(&tokenRequest)
+			result.ParseForm()
 
 			Expect(err).To(BeNil())
-			Expect(tokenRequest).To(Equal(AuthorizationTokenRequest{
-				GrantType:    "authorization_code",
-				ClientID:     "clientID",
-				CodeVerifier: "Verifier",
-				Code:         "code",
-				RedirectURI:  "https://redirect",
-			}))
+			Expect(result.FormValue("grant_type")).To(Equal("authorization_code"))
+			Expect(result.FormValue("client_id")).To(Equal("clientID"))
+			Expect(result.FormValue("code_verifier")).To(Equal("Verifier"))
+			Expect(result.FormValue("code")).To(Equal("code"))
+			Expect(result.FormValue("redirect_uri")).To(Equal("https://redirect"))
 			Expect(result.URL.String()).To(Equal("https://issuer/oauth/token"))
+
+			Expect(result.Header.Get("Content-Type")).To(Equal("application/x-www-form-urlencoded"))
+			Expect(result.Header.Get("Content-Length")).To(Equal("117"))
 		})
 
 		It("returns an error when NewRequest returns an error", func() {
@@ -96,16 +96,16 @@ var _ = Describe("CodetokenExchanger", func() {
 
 			result, err := tokenRetriever.newRefreshTokenRequest(exchangeRequest)
 
-			var tokenRequest RefreshTokenRequest
-			json.NewDecoder(result.Body).Decode(&tokenRequest)
+			result.ParseForm()
 
 			Expect(err).To(BeNil())
-			Expect(tokenRequest).To(Equal(RefreshTokenRequest{
-				GrantType:    "refresh_token",
-				ClientID:     "clientID",
-				RefreshToken: "refreshToken",
-			}))
+			Expect(result.FormValue("grant_type")).To(Equal("refresh_token"))
+			Expect(result.FormValue("client_id")).To(Equal("clientID"))
+			Expect(result.FormValue("refresh_token")).To(Equal("refreshToken"))
 			Expect(result.URL.String()).To(Equal("https://issuer/oauth/token"))
+
+			Expect(result.Header.Get("Content-Type")).To(Equal("application/x-www-form-urlencoded"))
+			Expect(result.Header.Get("Content-Length")).To(Equal("70"))
 		})
 
 		It("returns an error when NewRequest returns an error", func() {
