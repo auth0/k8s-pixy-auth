@@ -67,16 +67,18 @@ func (ce *TokenRetriever) newExchangeCodeRequest(req AuthorizationCodeExchangeRe
 	uv.Set("code", req.Code)
 	uv.Set("redirect_uri", req.RedirectURI)
 
+	euv := uv.Encode()
+
 	request, err := http.NewRequest("POST",
 		ce.oidcWellKnownEndpoints.TokenEndpoint,
-		strings.NewReader(uv.Encode()),
+		strings.NewReader(euv),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Add("Content-Length", strconv.Itoa(len(uv.Encode())))
+	request.Header.Add("Content-Length", strconv.Itoa(len(euv)))
 
 	return request, nil
 }
@@ -89,16 +91,18 @@ func (ce *TokenRetriever) newRefreshTokenRequest(req RefreshTokenExchangeRequest
 	uv.Set("client_id", req.ClientID)
 	uv.Set("refresh_token", req.RefreshToken)
 
+	euv := uv.Encode()
+
 	request, err := http.NewRequest("POST",
 		ce.oidcWellKnownEndpoints.TokenEndpoint,
-		strings.NewReader(uv.Encode()),
+		strings.NewReader(euv),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Add("Content-Length", strconv.Itoa(len(uv.Encode())))
+	request.Header.Add("Content-Length", strconv.Itoa(len(euv)))
 
 	return request, nil
 }
