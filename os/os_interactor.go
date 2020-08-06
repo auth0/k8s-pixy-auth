@@ -25,7 +25,7 @@ func (i *DefaultInteractor) OpenURL(url string) error {
 		// The character & is treated as running a separate command in Windows
 		// cmd /c start "http://domain.com?param1&param2" results in trying to run cmd /c "start http://domain.com?parm1" & param2
 		// Also, the " char is used as the delimiter to escape special characters, so "&" would become \&\
-		// cmd /c start 'http://domain.com?param1"&"param2' works when inputting directly to the command prompt,
+		// cmd /c start 'http://domain.com?param1=value with space"&"param2=value2' works when inputting directly to the command prompt,
 		// but the "&" is escaped by \"&\" when passed from code, which becomes \&\, resulting in cmd /c start 'http://domain.com?param1\&\param2'
 		// And spaces will not work within the string we need to encode only the whitespace.
 		// SO, this code creates the correct URL string, adds the start command to a powershell file and executes powershell
