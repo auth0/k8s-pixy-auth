@@ -1,6 +1,7 @@
 package os
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -21,18 +22,16 @@ func (i *DefaultInteractor) OpenURL(url string) error {
 	switch runtime.GOOS {
 	case "windows":
 		cmd = "cmd"
-		args = []string{"/c", "start"}
-		// The character & is treated as running a separate command in Windows
-		// cmd /c start "http://domain.com?param1&param2" results in trying to run cmd /c "start http://domain.com?parm1" & param2
-		// Also, the " char is used as the delimiter to escape special characters, so "&" would become \&\
-		// cmd /c start 'http://domain.com?param1=value with space"&"param2=value2' works when inputting directly to the command prompt,
-		// but the "&" is escaped by \"&\" when passed from code, which becomes \&\, resulting in cmd /c start 'http://domain.com?param1\&\param2'
-		// The start command uses ^ to escape special characters
-		url = strings.ReplaceAll(strings.ReplaceAll(url, " ", "%20"), "&", `^&`)
+		args, url = i.BuildWindowsAgsAndURL(url)
 	case "darwin":
 		cmd = "open"
 	default: // "linux", "freebsd", "openbsd", "netbsd"
-		cmd = "xdg-open"
+		if i.IsWSL() {
+			cmd = "cmd.exe"
+			args, url = i.BuildWindowsAgsAndURL(url)
+		} else {
+			cmd = "xdg-open"
+		}
 	}
 
 	args = append(args, url)
@@ -98,4 +97,33 @@ func (i DefaultInteractor) CopyFile(source, destination string) error {
 		return err
 	}
 	return destFile.Close()
+}
+
+// IsWSL runs the "uname -a" command to see if the output contains "microsoft" and returns true if it does, else false.
+// This is so we can check if the Linux OS is actually Windows SubSystem for Linux, which requires
+// A different command to open a browser.
+func (i DefaultInteractor) IsWSL() bool {
+	b, err := exec.Command("uname", "-a").Output()
+	if err != nil {
+		fmt.Printf("\nWarning: %s\n", err.Error())
+		return false
+	}
+
+	if strings.Contains(strings.ToLower(string(b)), "microsoft") {
+		return true
+	}
+
+	return false
+}
+
+// BuildWindowsAgsAndURL builds the command args and escapes the url for the Windows command to open a browser.
+// The character & is treated as running a separate command in Windows
+// cmd /c start "http://domain.com?param1&param2" results in trying to run cmd /c "start http://domain.com?parm1" & param2
+// Also, the " char is used as the delimiter to escape special characters, so "&" would become \&\
+// cmd /c start 'http://domain.com?param1=value with space"&"param2=value2' works when inputting directly to the command prompt,
+// but the "&" is escaped by \"&\" when passed from code, which becomes \&\, resulting in cmd /c start 'http://domain.com?param1\&\param2'
+// The start command uses ^ to escape special characters
+func (i DefaultInteractor) BuildWindowsAgsAndURL(url string) (args []string, escapedURL string) {
+	return []string{"/c", "start"},
+		strings.ReplaceAll(strings.ReplaceAll(url, " ", "%20"), "&", `^&`)
 }
