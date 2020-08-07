@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/user"
 	"runtime"
+	"strings"
 )
 
 // DefaultInteractor is the default OS interactor that wraps go standard os
@@ -21,12 +22,21 @@ func (i *DefaultInteractor) OpenURL(url string) error {
 	case "windows":
 		cmd = "cmd"
 		args = []string{"/c", "start"}
+		// The character & is treated as running a separate command in Windows
+		// cmd /c start "http://domain.com?param1&param2" results in trying to run cmd /c "start http://domain.com?parm1" & param2
+		// Also, the " char is used as the delimiter to escape special characters, so "&" would become \&\
+		// cmd /c start 'http://domain.com?param1=value with space"&"param2=value2' works when inputting directly to the command prompt,
+		// but the "&" is escaped by \"&\" when passed from code, which becomes \&\, resulting in cmd /c start 'http://domain.com?param1\&\param2'
+		// The start command uses ^ to escape special characters
+		url = strings.ReplaceAll(strings.ReplaceAll(url, " ", "%20"), "&", `^&`)
 	case "darwin":
 		cmd = "open"
 	default: // "linux", "freebsd", "openbsd", "netbsd"
 		cmd = "xdg-open"
 	}
+
 	args = append(args, url)
+
 	return exec.Command(cmd, args...).Start()
 }
 
