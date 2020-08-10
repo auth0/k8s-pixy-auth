@@ -1,7 +1,6 @@
 package os
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -105,8 +104,7 @@ func (i DefaultInteractor) CopyFile(source, destination string) error {
 func (i DefaultInteractor) IsWSL() bool {
 	b, err := exec.Command("uname", "-a").Output()
 	if err != nil {
-		fmt.Printf("\nWarning: %s\n", err.Error())
-		return false
+		panic(err)
 	}
 
 	if strings.Contains(strings.ToLower(string(b)), "microsoft") {
