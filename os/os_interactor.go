@@ -25,7 +25,13 @@ func (i *DefaultInteractor) OpenURL(url string) error {
 	case "darwin":
 		cmd = "open"
 	default: // "linux", "freebsd", "openbsd", "netbsd"
-		if i.IsWSL() {
+		// first check if it's Windows SubSystem for Linux
+		isWSL, err := i.IsWSL()
+		if err != nil {
+			return err
+		}
+
+		if isWSL {
 			cmd = "cmd.exe"
 			args, url = i.BuildWindowsAgsAndURL(url)
 		} else {
@@ -101,17 +107,17 @@ func (i DefaultInteractor) CopyFile(source, destination string) error {
 // IsWSL runs the "uname -a" command to see if the output contains "microsoft" and returns true if it does, else false.
 // This is so we can check if the Linux OS is actually Windows SubSystem for Linux, which requires
 // A different command to open a browser.
-func (i DefaultInteractor) IsWSL() bool {
+func (i DefaultInteractor) IsWSL() (bool, error) {
 	b, err := exec.Command("uname", "-a").Output()
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 
 	if strings.Contains(strings.ToLower(string(b)), "microsoft") {
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
 // BuildWindowsAgsAndURL builds the command args and escapes the url for the Windows command to open a browser.
