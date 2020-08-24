@@ -10,6 +10,8 @@ A kubectl plugin to authenticate against an OIDC compatible issuer using [PKCE (
 
 As of Kubernetes v1.11 there is beta support for a [client-go credentials plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). Using the support it is possible to use an Auth0 application to authenticate users and provide tokens with which a correctly configured Kubernetes cluster can authorize user actions.
 
+Note that while this tool uses PKCE, since it was built the recommendation for CLIs was changed from using PKCE to using [Device Authorization Flow](https://auth0.com/docs/integrations/secure-a-cli-with-auth0#device-authorization-flow). The recommendation change is due to usability as Deivce Authorization Flow allows for CLIs to work where browsers cannot be opened (eg: SSH terminal) and does not require you to open a port on the local machine to handle the callback. At this time there are no plans to support Device Authorization Flow in this tool, however, we welcome PRs.
+
 ## Installation
 At this point in the project installation is manual. In the future this will be automated.
 1. Make sure your Kubernetes api service is [configured to use OpenID Connect Tokens](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
