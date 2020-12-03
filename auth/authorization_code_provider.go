@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -67,16 +68,20 @@ func (cp *LocalCodeProvider) GetCode(challenge Challenge, additionalScopes ...st
 	state := cp.state()
 	go cp.listener.AwaitResponse(codeReceiverCh, state)
 
-	if err := cp.osInteractor.OpenURL(fmt.Sprintf(
-		"%s?audience=%s&scope=%s&response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&state=%s",
+	params := url.Values{
+		"audience":              []string{cp.Audience},
+		"client_id":             []string{cp.ClientID},
+		"code_challenge":        []string{challenge.Code},
+		"code_challenge_method": []string{challenge.Method},
+		"redirect_uri":          []string{cp.listener.GetCallbackURL()},
+		"response_type":         []string{"code"},
+		"scope":                 []string{strings.Join(append([]string{"openid", "email"}, additionalScopes...), " ")},
+		"state":                 []string{state},
+	}
+
+	if err := cp.osInteractor.OpenURL(fmt.Sprintf("%s?%s",
 		cp.oidcWellKnownEndpoints.AuthorizationEndpoint,
-		cp.Audience,
-		strings.Join(append([]string{"openid", "email"}, additionalScopes...), " "),
-		cp.ClientID,
-		challenge.Code,
-		challenge.Method,
-		cp.listener.GetCallbackURL(),
-		state,
+		params.Encode(),
 	)); err != nil {
 		return nil, err
 	}
