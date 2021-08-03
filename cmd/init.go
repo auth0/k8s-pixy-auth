@@ -34,7 +34,7 @@ var initCmd = &cobra.Command{
 			IssuerEndpoint: issuerEndpoint,
 			ClientID:       clientID,
 			Audience:       audience,
-		}, useIDToken, withRefreshToken)
+		}, useIDToken, withRefreshToken, port)
 		if err != nil {
 			panic(err)
 		}
