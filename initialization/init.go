@@ -64,7 +64,7 @@ func NewDefaultInitializer() *Initializer {
 
 // UpdateKubeConfig updates the provided context in kube config with the
 // k8s-pixy-auth exec information
-func (init *Initializer) UpdateKubeConfig(contextName, binaryLocation string, issuer auth.Issuer, useIDToken, withRefreshToken bool) error {
+func (init *Initializer) UpdateKubeConfig(contextName, binaryLocation string, issuer auth.Issuer, useIDToken, withRefreshToken bool, port uint16) error {
 	config, err := init.kubeConfigInteractor.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading kube config: %s", err.Error())
@@ -80,6 +80,7 @@ func (init *Initializer) UpdateKubeConfig(contextName, binaryLocation string, is
 		fmt.Sprintf("--issuer-endpoint=%s", issuer.IssuerEndpoint),
 		fmt.Sprintf("--client-id=%s", issuer.ClientID),
 		fmt.Sprintf("--audience=%s", issuer.Audience),
+		fmt.Sprintf("--port=%d", port),
 	}
 
 	if useIDToken {

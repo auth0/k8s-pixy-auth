@@ -12,6 +12,7 @@ var clientID string
 var audience string
 var useIDToken bool
 var withRefreshToken bool
+var port uint16
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&issuerEndpoint, "issuer-endpoint", "i", "", "the issuer endpoint")
@@ -22,6 +23,7 @@ func init() {
 	rootCmd.MarkFlagRequired("audience")
 	rootCmd.PersistentFlags().BoolVar(&useIDToken, "use-id-token", false, "if the id token should be used instead of the access token")
 	rootCmd.PersistentFlags().BoolVar(&withRefreshToken, "with-refresh-token", false, "if the refresh token should be used / requested")
+	rootCmd.PersistentFlags().Uint16Var(&port, "port", 8080, "Port on which the callback from the IDP is expected.")
 }
 
 var rootCmd = &cobra.Command{

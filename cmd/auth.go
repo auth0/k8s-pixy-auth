@@ -33,7 +33,7 @@ var authCmd = &cobra.Command{
 			return errors.Wrap(err, "could not set up keyring")
 		}
 
-		provider, err := newCachingTokenProviderUsingKeyring(issuerEndpoint, clientID, audience, withRefreshToken, k)
+		provider, err := newCachingTokenProviderUsingKeyring(issuerEndpoint, clientID, audience, withRefreshToken, port, k)
 		if err != nil {
 			return errors.Wrap(err, "could not build caching token provider")
 		}
@@ -65,12 +65,12 @@ var authCmd = &cobra.Command{
 	},
 }
 
-func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, withRefreshToken bool, k keyring.Keyring) (tokenProvider, error) {
+func newCachingTokenProviderUsingKeyring(issuer, clientID, audience string, withRefreshToken bool, port uint16, k keyring.Keyring) (tokenProvider, error) {
 	atProvider, err := auth.NewDefaultAccessTokenProvider(auth.Issuer{
 		IssuerEndpoint: issuer,
 		ClientID:       clientID,
 		Audience:       audience,
-	}, withRefreshToken)
+	}, withRefreshToken, port)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not build access token provider")
 	}
