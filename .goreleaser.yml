@@ -1,0 +1,39 @@
+# Documentation at http://goreleaser.com
+builds:
+- main: .
+  env:
+  - CGO_ENABLED=0
+  goarch:
+  - amd64
+  - arm64
+  goos:
+  - darwin
+  - linux
+  - windows
+  binary: auth0
+  ldflags:
+      - -X 'github.com/auth0/k8s-pixy-auth/cmd.cersion={{.Version}}'
+      - -X 'github.com/auth0/k8s-pixy-auth/cmd.commitSHA={{.Commit}}'
+      - -X 'github.com/auth0/k8s-pixy-auth/cmd.buildDate={{.Date}}'
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    files:
+      - "none*"
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ .Tag }}-SNAPSHOT-{{.ShortCommit}}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
